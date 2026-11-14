@@ -1,0 +1,32 @@
+services:
+  db:
+    build:
+      context: ./infra/postgres
+      dockerfile: Dockerfile
+    container_name: napoli-postgres-mobility
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mobility}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      GTFS_URL: ${GTFS_URL:-https://www2.anm.it/infoclick/infoclick.php?palina=3010}
+      GTFS_FALLBACK_URL: ${GTFS_FALLBACK_URL:-https://www.anm.it/google/google-transit.zip}
+      PBF_URL: ${PBF_URL:-https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf}
+      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-true}
+      AUTO_IMPORT_GTFS: ${AUTO_IMPORT_GTFS:-true}
+      SKIP_PBF_DOWNLOAD: ${SKIP_PBF_DOWNLOAD:-false}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  postgres_data:
+    driver: local

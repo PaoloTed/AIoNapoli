@@ -4,12 +4,22 @@ Interfaccia Next.js per operatori, turisti e cittadini. Stack: Next.js con Mapbo
 
 ## Documentazione
 
-La documentazione del frontend non e' ancora redatta. Punto di partenza, prodotto dal backend:
+La documentazione e' in [docs/](docs/README.md). Ordine di lettura per chi implementa:
 
-| Documento | Cosa fornisce al frontend |
+| Documento | Cosa fornisce |
 |---|---|
-| [CONTRACTS.md](../backend/docs/CONTRACTS.md) | struttura di finding e decision, campi obbligatori, regole di collocazione |
-| [REQUIREMENTS.md](../backend/docs/REQUIREMENTS.md) sezione 2.5 | endpoint, codici di risposta, formato degli errori |
+| [API-CLIENT.md](docs/API-CLIENT.md) | tipi TypeScript, client HTTP, stream SSE, resa degli errori |
+| [SCREENS.md](docs/SCREENS.md) | rotte, schermate, dati usati, mappa con il copione della demo |
+| [DESIGN.md](docs/DESIGN.md) | direzione visiva, token, componenti, accessibilita' |
+| [UI-REQUIREMENTS.md](docs/UI-REQUIREMENTS.md) | requisiti di interfaccia con criterio di accettazione |
+| [STACK.md](docs/STACK.md) | tecnologie, versioni, alternative scartate |
+
+I contratti consumati sono prodotti dal backend:
+
+| Documento | Cosa fornisce |
+|---|---|
+| [CONTRACTS.md](../backend/docs/CONTRACTS.md) | Finding, Decision, PlanItem, ReasoningStep, Refusal, RelevanceScore, Narrative |
+| [API.md](../backend/docs/API.md) | endpoint, payload completi, envelope, eventi SSE, CORS |
 | [OPERATIONS.md](../backend/docs/OPERATIONS.md) sezione 3 | tassonomia degli errori e forma `application/problem+json` |
 
-Documenti da produrre in `frontend/docs/`: schermate, requisiti di interfaccia, contratto dello stream di eventi, gestione degli stati di caricamento e di fallback.
+Il frontend non definisce i propri dati: se un campo serve e non c'e', si apre una voce in [DECISIONS.md](../backend/docs/DECISIONS.md), non si inventa un campo nel client.

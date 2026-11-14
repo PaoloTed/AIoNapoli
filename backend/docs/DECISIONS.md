@@ -186,6 +186,16 @@ Formato: `D-NN`, data, stato, contesto, decisione, conseguenze, alternative scar
 **Alternative scartate**: usare il proxy come fonte primaria, scartata perche' viola la regola 3 anti-slop e perche' i dati originali restano di ANM. WebSocket per lo streaming, scartato perche' aggiunge una connessione persistente senza valore per la demo. Nessun real-time, scartata perche' lascia la demo su un dato simulato quando esiste un dato reale.
 **Riferimenti**: [CONNECTORS.md](CONNECTORS.md) sezione connettore GTFS real-time, [SCHEMA.md](../../database/docs/SCHEMA.md) sezioni 2.9 e 2.10, [assumptions.md](../../assumptions.md) voci A3, A7, S6, S7
 
+## D-19 API di presentazione con envelope e stream one-shot
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: la decisione ha sei campi congelati e il frontend ha bisogno di altro: `decision_id`, punteggi di rilevanza con i contributi, testo narrativo per target, versione del contratto. Mettere quei dati dentro la decisione viola il contratto; lasciarli al frontend significa fargli ricalcolare cose che il backend ha gia' calcolato.
+**Decisione**: l'API restituisce un envelope con `contract_version`, `decision_id`, `decision`, `relevance` e `narrative`. Gli oggetti aggiuntivi sono definiti in [CONTRACTS.md](CONTRACTS.md) sezioni 7 e 7.1, non sono congelati dalla traccia e cambiano insieme a [API.md](API.md). Lo stream SSE e' one-shot: descrive una esecuzione, termina con l'evento `decision` e non e' un feed permanente.
+**Conseguenze**: il contratto congelato resta intatto, il frontend non calcola nulla, il determinismo resta verificabile da fuori con due chiamate. Il prezzo: un documento in piu' da tenere allineato, e la regola che un cambio di envelope tocca backend, `API.md` e il client nello stesso commit.
+**Alternative scartate**: aggiungere campi alla decisione, scartata per violazione del contratto; far calcolare i punteggi al frontend, scartata perche' duplicherebbe la logica di `relevance.yaml` e renderebbe il determinismo non verificabile.
+**Riferimenti**: [API.md](API.md), [CONTRACTS.md](CONTRACTS.md) sezione 7, `frontend/docs/API-CLIENT.md`
+
 ## Come si aggiunge una decisione
 
 1. Assegnare il numero successivo.

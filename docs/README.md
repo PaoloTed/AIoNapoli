@@ -11,6 +11,8 @@ Cartella: `backend/docs/`
 | [REQUIREMENTS.md](../backend/docs/REQUIREMENTS.md) | requisiti funzionali e non funzionali con criterio di accettazione |
 | [ARCHITECTURE.md](../backend/docs/ARCHITECTURE.md) | componenti, dipendenze, flusso, punti di innesto |
 | [CONTRACTS.md](../backend/docs/CONTRACTS.md) | strutture condivise con il frontend, regole di collocazione |
+| [API.md](../backend/docs/API.md) | contratto HTTP: endpoint, payload, envelope, eventi SSE, CORS |
+| [STACK.md](../backend/docs/STACK.md) | tecnologie del backend, versioni, alternative scartate |
 | [OPERATIONS.md](../backend/docs/OPERATIONS.md) | configurazione, errori, degradazione, comandi |
 | [TRACEABILITY.md](../backend/docs/TRACEABILITY.md) | matrice requisito, componente, test |
 | [DECISIONS.md](../backend/docs/DECISIONS.md) | decisioni tecniche con alternative scartate |
@@ -32,7 +34,16 @@ Cartella: `database/docs/`
 
 Cartella: `frontend/docs/`
 
-Non ancora redatta. Punto di partenza: [CONTRACTS.md](../backend/docs/CONTRACTS.md), [REQUIREMENTS.md](../backend/docs/REQUIREMENTS.md) sezione API e [OPERATIONS.md](../backend/docs/OPERATIONS.md). La documentazione del frontend si scrive a partire da questi.
+| Documento | Contenuto |
+|---|---|
+| [README.md](../frontend/docs/README.md) | indice e ordine di lettura per chi implementa |
+| [STACK.md](../frontend/docs/STACK.md) | tecnologie del frontend, versioni, alternative scartate |
+| [SCREENS.md](../frontend/docs/SCREENS.md) | rotte, schermate, dati usati, mappa con il copione della demo |
+| [DESIGN.md](../frontend/docs/DESIGN.md) | direzione visiva, token, componenti, accessibilita' |
+| [UI-REQUIREMENTS.md](../frontend/docs/UI-REQUIREMENTS.md) | requisiti di interfaccia con criterio di accettazione |
+| [API-CLIENT.md](../frontend/docs/API-CLIENT.md) | tipi TypeScript, client HTTP, stream SSE, resa degli errori |
+
+Il frontend parte dai documenti prodotti dal backend: [API.md](../backend/docs/API.md), [CONTRACTS.md](../backend/docs/CONTRACTS.md), [OPERATIONS.md](../backend/docs/OPERATIONS.md) sezione 3. Sono marcati `[PIANIFICATO]`: descrivono il contratto concordato, non codice gia' esistente.
 
 ## Documentazione generale
 

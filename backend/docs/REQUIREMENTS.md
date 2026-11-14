@@ -86,6 +86,8 @@ Il backend non esegue azioni sulla citta'. Propone.
 | REQ-API-07 | Nessun endpoint contiene logica di dominio | test di architettura via AST |
 | REQ-API-08 | Il rifiuto di un agente e' un esito previsto, non un errore interno | test: rifiuto produce 200 con oggetto `Refusal` o 422 motivato, mai 500 |
 
+Il contratto completo degli endpoint, con payload, envelope di risposta, eventi SSE e CORS, e' in [API.md](API.md).
+
 ### 2.6 Persistenza
 
 | ID | Requisito | Criterio di accettazione |

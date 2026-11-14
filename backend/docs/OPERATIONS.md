@@ -24,6 +24,7 @@ Configurazione, errori, degradazione, comandi. Tutto cio' che serve per eseguire
 | `HTTP_TIMEOUT_S` | `10` | timeout dei connettori |
 | `DEMO_SCENARIO` | `bagnoli` | scenario della demo |
 | `LOG_LEVEL` | `info` | livello di log |
+| `CORS_ORIGINS` | `http://localhost:3000` | origin ammessi dal frontend, lista separata da virgole |
 
 Nessun valore e' hardcoded nel codice. Ogni variabile ha un default che permette l'avvio senza configurazione.
 

@@ -34,6 +34,8 @@ uvicorn [DA COMPLETARE]
 - [REQUIREMENTS.md](docs/REQUIREMENTS.md) — requisiti con criterio di accettazione
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — componenti, dipendenze, punti di innesto
 - [CONTRACTS.md](docs/CONTRACTS.md) — contratti condivisi con il frontend
+- [API.md](docs/API.md) — contratto HTTP, payload, eventi SSE, CORS
+- [STACK.md](docs/STACK.md) — tecnologie, versioni, alternative scartate
 - [OPERATIONS.md](docs/OPERATIONS.md) — configurazione, errori, degradazione
 - [TRACEABILITY.md](docs/TRACEABILITY.md) — matrice requisito, componente, test
 - [DECISIONS.md](docs/DECISIONS.md) — decisioni tecniche
@@ -43,3 +45,4 @@ uvicorn [DA COMPLETARE]
 - [ORCHESTRATOR.md](docs/ORCHESTRATOR.md) — regole e priorita'
 - [CONNECTORS.md](docs/CONNECTORS.md) — connettori
 - [Schemi condivisi](../shared/schemas/)
+- [Documentazione frontend](../frontend/docs/README.md) — cosa consuma da questa API

@@ -147,9 +147,45 @@ Un'incoerenza reale tra traccia e regole: la traccia dichiara `occupancy_pct` in
 
 La conversione ha una sola implementazione, `occupancy_to_density()`, in `domain/logic/units.py`, con test dedicato. Le soglie portano l'unita' nel nome.
 
-## 7. Compatibilita'
+## 7. RelevanceScore
+
+Struttura separata dalla decisione (voce C9). Vive accanto, non dentro: i sei campi non si toccano.
+
+| Campo | Tipo | Vincolo |
+|---|---|---|
+| `rounding` | intero | decimali del punteggio, default 4 |
+| `targets` | oggetto | una chiave per `operator`, `tourist`, `citizen` |
+| `targets.<target>.order` | lista di interi | indici di `Decision.plan`, tutti presenti, nessun duplicato |
+| `targets.<target>.items` | lista di `ScoredItem` | un elemento per indice citato in `order` |
+| `ScoredItem.plan_index` | intero >= 0 | indice dell'item in `Decision.plan` |
+| `ScoredItem.score` | float | 0..1, arrotondato a `rounding` |
+| `ScoredItem.contributions` | lista di `Contribution` | somma di `contribution` uguale a `score` |
+| `Contribution.feature` | stringa | una delle feature ammesse in `relevance.yaml` |
+| `Contribution.value` | numero | valore della feature prima del peso |
+| `Contribution.weight` | float | peso della feature per quel target |
+| `Contribution.contribution` | float | `value * weight`, arrotondato |
+
+`plan_index` e' l'unico modo di collegare un punteggio a un item: `PlanItem` non ha identificatore, e aggiungerne uno violerebbe il contratto.
+
+`order` e `priority` possono divergere: `priority` e' il rango deciso dall'orchestratore nella risoluzione delle priorita', `order` e' la classifica per rilevanza. Quando un client ordina, sceglie una delle due e lo dichiara; l'interfaccia usa `order` e mostra `priority` come etichetta.
+
+### 7.1 Narrative
+
+Testo del piano riformulato, fuori dalla decisione (voce C3). Struttura restituita accanto alla decisione.
+
+| Campo | Tipo | Vincolo |
+|---|---|---|
+| `mode` | enum | `replay`, `live`, `off` |
+| `items` | lista | puo' essere vuota se il modello e' spento e non c'e' template |
+| `items[].plan_index` | intero >= 0 | indice dell'item in `Decision.plan` |
+| `items[].texts` | oggetto | chiave `it` obbligatoria, `en` solo per il target `tourist` |
+
+`mode` dichiara la provenienza del testo. La decisione e' identica nei tre modi: cambia la forma, non la sostanza (REQ-DEG-02).
+
+## 8. Compatibilita'
 
 - I contratti sono versionati con `CONTRACT_VERSION`.
 - Un cambiamento ai nove o ai sei campi richiede decisione di team e aggiornamento coordinato di backend e frontend nello stesso commit.
 - Un cambiamento ai campi di `content` letti dalle regole e' ammesso, ma passa da una voce in [DECISIONS.md](DECISIONS.md).
+- `RelevanceScore` e `Narrative` non sono congelati dalla traccia: cambiano insieme a [API.md](API.md) e a `frontend/docs/API-CLIENT.md`, nello stesso commit.
 - Un test di schema confronta l'insieme dei campi con una costante attesa: se qualcuno aggiunge un campo, la suite fallisce.

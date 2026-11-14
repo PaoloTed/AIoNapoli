@@ -1,0 +1,15 @@
+{
+  "scenario_id": "bagnoli",
+  "decision_id": "23afe929acf8f472",
+  "deterministic_replay": true,
+  "reasoning_log_steps": 5,
+  "target_coverage": "3/3",
+  "plan_items_count": 3,
+  "simulated_findings_ratio": 0.67,
+  "finding_to_decision_delta_s": 9328.999,
+  "agents_present": [
+    "mobility",
+    "crowding",
+    "context"
+  ]
+}

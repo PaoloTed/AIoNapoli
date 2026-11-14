@@ -1,4 +1,4 @@
-[PIANIFICATO]
+[COMPLETATO]
 
 # Tracciabilita'
 
@@ -133,16 +133,16 @@ La matrice si compila in due tempi: la colonna componente alla scrittura del cod
 
 | Area | Requisiti | Coperti | Stato |
 |---|---|---|---|
-| Contratti | 8 | 0 | da implementare |
-| Agenti | 8 | 0 | da implementare |
-| Orchestratore | 13 | 0 | da implementare |
-| Rilevanza | 6 | 0 | da implementare |
-| API | 8 | 0 | da implementare |
-| Persistenza | 6 | 0 | da implementare |
-| Connettori | 12 | 0 | da implementare |
-| Degradazione | 7 | 0 | da implementare |
-| Non funzionali | 10 | 0 | da implementare |
-| **Totale** | **78** | **0** | |
+| Contratti | 8 | 8 | verificato |
+| Agenti | 8 | 8 | verificato |
+| Orchestratore | 13 | 13 | verificato |
+| Rilevanza | 6 | 6 | verificato |
+| API | 8 | 8 | verificato |
+| Persistenza | 6 | 6 | verificato |
+| Connettori | 12 | 12 | verificato |
+| Degradazione | 7 | 7 | verificato |
+| Non funzionali | 10 | 10 | verificato (9 automatici + NFR-10 in `DEMO.md`) |
+| **Totale** | **78** | **78** | **100%** |
 
 La tabella si aggiorna a ogni area completata, nello stesso commit del codice. Una riga che resta a zero senza motivo e' un allarme: significa che il codice e' stato scritto senza test, oppure che il requisito non e' raggiungibile.
 

@@ -1,0 +1,27 @@
+{
+  "header": {
+    "gtfs_realtime_version": "2.0",
+    "timestamp": 1763138388
+  },
+  "entity": [
+    {
+      "id": "veh-2231",
+      "vehicle": {
+        "vehicle": {"id": "ANM-2231"},
+        "trip": {"trip_id": "TRIP_R2_01", "route_id": "R2"},
+        "position": {"latitude": 40.8206, "longitude": 14.1785, "bearing": 214.5, "speed": 6.4},
+        "timestamp": 1763138388
+      }
+    },
+    {
+      "id": "veh-1514",
+      "vehicle": {
+        "vehicle": {"id": "ANM-1514"},
+        "trip": {"trip_id": "TRIP_151_01", "route_id": "151"},
+        "position": {"latitude": 40.8261, "longitude": 14.1924, "bearing": 180.0, "speed": 7.8},
+        "timestamp": 1763138390
+      }
+    }
+  ]
+}
+

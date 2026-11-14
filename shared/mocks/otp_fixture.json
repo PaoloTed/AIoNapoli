@@ -1,0 +1,27 @@
+{
+  "plan": {
+    "itineraries": [
+      {
+        "duration": 1200,
+        "walkDistance": 420.0,
+        "legs": [
+          {
+            "mode": "BUS",
+            "route": "151",
+            "from": {"name": "Piazza Garibaldi", "stopId": "STOP_GAR_01", "lat": 40.8522, "lon": 14.2724},
+            "to": {"name": "Campi Flegrei", "stopId": "STOP_FUO_01", "lat": 40.8259, "lon": 14.1912},
+            "duration": 900
+          },
+          {
+            "mode": "RAIL",
+            "route": "CUMANA",
+            "from": {"name": "Campi Flegrei", "stopId": "STOP_FUO_01", "lat": 40.8259, "lon": 14.1912},
+            "to": {"name": "Bagnoli", "stopId": "STOP_BAG_01", "lat": 40.8165, "lon": 14.1672},
+            "duration": 300
+          }
+        ]
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,400 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ChatPanel } from "@/components/ChatPanel";
+import { CitizenView } from "@/components/CitizenView";
+import { DecisionHeader } from "@/components/DecisionHeader";
+import { FindingCard } from "@/components/FindingCard";
+import { MapPanel } from "@/components/MapPanel";
+import { OperatorView } from "@/components/OperatorView";
+import { PlanColumn } from "@/components/PlanColumn";
+import { ProvenanceChip } from "@/components/ProvenanceChip";
+import { RuleTimeline } from "@/components/RuleTimeline";
+import { TouristView } from "@/components/TouristView";
+import { useDecisionStream } from "@/hooks/useDecisionStream";
+import type { DecisionResponse, Finding, ScenarioResponse } from "@/lib/contracts";
+import { SAMPLE_DECISION, SAMPLE_SCENARIO } from "./fixtures";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/operator",
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+// Mock react-map-gl so tests without Mapbox token never touch WebGL
+vi.mock("react-map-gl", () => ({
+  default: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="mock-mapbox">{children}</div>
+  ),
+  Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Source: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Layer: () => null,
+  NavigationControl: () => null,
+}));
+
+class MockEventSource {
+  static instances: MockEventSource[] = [];
+  listeners = new Map<string, ((event: MessageEvent<string>) => void)[]>();
+  closed = false;
+
+  constructor(readonly url: string) {
+    MockEventSource.instances.push(this);
+  }
+
+  addEventListener(type: string, cb: (event: MessageEvent<string>) => void) {
+    const existing = this.listeners.get(type) ?? [];
+    existing.push(cb);
+    this.listeners.set(type, existing);
+  }
+
+  emit(type: string, payload: unknown) {
+    const cbs = this.listeners.get(type) ?? [];
+    const ev = { data: JSON.stringify(payload) } as MessageEvent<string>;
+    for (const cb of cbs) cb(ev);
+  }
+
+  emitRaw(type: string) {
+    const cbs = this.listeners.get(type) ?? [];
+    const ev = {} as MessageEvent<string>;
+    for (const cb of cbs) cb(ev);
+  }
+
+  close() {
+    this.closed = true;
+  }
+}
+
+function renderWithQuery(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
+
+beforeEach(() => {
+  MockEventSource.instances = [];
+  vi.stubGlobal("EventSource", MockEventSource);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe("Provenance & Partial States (FE-REQ-07, 08, 09, 10, 12, 20)", () => {
+  it("FE-REQ-09: ProvenanceChip & FindingCard distinguish simulated vs real data", () => {
+    const { container: simContainer } = render(
+      <FindingCard agent="crowding" finding={SAMPLE_SCENARIO.findings[1]} />,
+    );
+    expect(simContainer.querySelector("[data-provenance='simulated']")).toHaveTextContent(
+      "SIMULATO",
+    );
+    expect(simContainer.querySelector("article")).toHaveClass("border-dashed");
+
+    const { container: realContainer } = render(
+      <FindingCard agent="mobility" finding={SAMPLE_SCENARIO.findings[0]} />,
+    );
+    expect(realContainer.querySelector("[data-provenance='real']")).toBeInTheDocument();
+    expect(realContainer.querySelector("article")).toHaveClass("border-solid");
+    expect(realContainer).not.toHaveTextContent("SIMULATO");
+
+    render(<ProvenanceChip variant="unavailable" />);
+    expect(screen.getByText("NON DISPONIBILE")).toBeInTheDocument();
+  });
+
+  it("FE-REQ-07 & FE-REQ-20: missing finding renders partial unavailable card with refusal reason_code", () => {
+    render(
+      <FindingCard
+        agent="crowding"
+        refusal={{
+          agent: "crowding",
+          reason_code: "missing_occupancy",
+          missing_input: ["occupancy_estimates"],
+          detail: "nessuna stima nella finestra",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("NON DISPONIBILE")).toBeInTheDocument();
+    expect(screen.getByText("missing_occupancy")).toBeInTheDocument();
+    expect(screen.getByText("nessuna stima nella finestra")).toBeInTheDocument();
+  });
+
+  it("FE-REQ-08: conflict.detected=false shows no_rules banner without errors", () => {
+    const noRulesDecision: DecisionResponse = {
+      ...SAMPLE_DECISION,
+      decision: {
+        ...SAMPLE_DECISION.decision,
+        conflict: {
+          detected: false,
+          description: "Nessun conflitto attivo sulle soglie configurate",
+        },
+      },
+    };
+
+    render(
+      <DecisionHeader
+        decisionId={noRulesDecision.decision_id}
+        decision={noRulesDecision.decision}
+        findings={SAMPLE_SCENARIO.findings}
+        onRepeat={vi.fn()}
+        repeatState={{ status: "idle" }}
+      />,
+    );
+
+    expect(screen.getByText(/Nessuna regola scattata/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("FE-REQ-10 & FE-REQ-12: MapPanel highlights no zone when zone_id missing and works without token", () => {
+    const findingsWithoutZone: Finding[] = [
+      {
+        ...SAMPLE_SCENARIO.findings[0]!,
+        content: { congestion: 0.5 },
+      },
+    ];
+
+    render(
+      <MapPanel
+        findings={findingsWithoutZone}
+        vehiclePositions={SAMPLE_SCENARIO.vehicle_positions}
+      />,
+    );
+
+    expect(screen.getByTestId("map-not-configured")).toBeInTheDocument();
+    expect(screen.getByTestId("map-zones-text")).toHaveTextContent(
+      "Nessuna zona evidenziata dai finding.",
+    );
+    expect(screen.getByTestId("map-vehicles-text")).toHaveTextContent("ANM-2231");
+  });
+});
+
+describe("Stream SSE & RuleTimeline (FE-REQ-13..17, 30)", () => {
+  function StreamHarness({ scenarioId }: { scenarioId: string }) {
+    const stream = useDecisionStream(scenarioId, true);
+    return <RuleTimeline steps={stream.steps} status={stream.status} onRetry={stream.reconnect} />;
+  }
+
+  it("FE-REQ-13, 15, 16, 17, 30: SSE opens right URL, shows fired=false reason, resets on reconnect, degrades cleanly", async () => {
+    render(<StreamHarness scenarioId="bagnoli" />);
+
+    expect(MockEventSource.instances).toHaveLength(1);
+    const es1 = MockEventSource.instances[0]!;
+    expect(es1.url).toContain("/api/v1/scenario/bagnoli/stream");
+
+    act(() => {
+      es1.emit("rule_evaluated", {
+        rule_id: "R1_line2_crowding",
+        agents: ["mobility", "crowding"],
+        fired: true,
+        reason: "densita' 0.91 oltre soglia 0.85",
+      });
+      es1.emit("rule_evaluated", {
+        rule_id: "R3_weather_capacity",
+        agents: ["context", "crowding"],
+        fired: false,
+        reason: "heavy_rain assente",
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("rule-row-R3_weather_capacity")).toHaveTextContent(
+        "heavy_rain assente",
+      );
+    });
+    expect(screen.getByRole("list")).toHaveAttribute("aria-live", "polite");
+
+    // Simulate stream drop -> degraded
+    act(() => {
+      es1.emitRaw("error");
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Stream non disponibile")).toBeInTheDocument();
+    });
+    expect(es1.closed).toBe(true);
+
+    // Retry reconnect clears steps before re-opening (no duplication)
+    fireEvent.click(screen.getByText("Riprova stream"));
+    expect(MockEventSource.instances).toHaveLength(2);
+    const es2 = MockEventSource.instances[1]!;
+    act(() => {
+      es2.emit("rule_evaluated", {
+        rule_id: "R1_line2_crowding",
+        agents: ["mobility", "crowding"],
+        fired: true,
+        reason: "densita' 0.91 oltre soglia 0.85",
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("rule-row-R1_line2_crowding")).toHaveLength(1);
+    });
+  });
+});
+
+describe("Target Isolation, Ordering & Limits (FE-REQ-21..26)", () => {
+  it("FE-REQ-21 & FE-REQ-24: TouristView hides reasoning_log/rationale and switches IT/EN with lang attr", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/scenario/")) {
+        return new Response(JSON.stringify(SAMPLE_SCENARIO), { status: 200 });
+      }
+      return new Response(JSON.stringify(SAMPLE_DECISION), { status: 200 });
+    });
+
+    renderWithQuery(<TouristView scenarioId="bagnoli" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("primary-message-text")).toHaveTextContent(
+        "Linea R2 da Fuorigrotta, circa 20 minuti.",
+      );
+    });
+
+    // Reasoning log and rationale must never appear
+    expect(document.body.textContent).not.toContain("priorita' sicurezza applicata");
+    expect(document.body.textContent).not.toContain("P2 tempo di percorrenza");
+    expect(document.body.textContent).not.toContain("3f9a51c7e2b84d06");
+
+    // Switch to English
+    fireEvent.click(screen.getByTestId("lang-en"));
+    expect(screen.getByTestId("primary-message-text")).toHaveTextContent(
+      "Line R2 from Fuorigrotta, about 20 minutes.",
+    );
+    expect(screen.getByTestId("primary-message-text")).toHaveAttribute("lang", "en");
+  });
+
+  it("FE-REQ-21: CitizenView shows qualitative zone status and hides confidence/reasoning_log", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/scenario/")) {
+        return new Response(JSON.stringify(SAMPLE_SCENARIO), { status: 200 });
+      }
+      return new Response(JSON.stringify(SAMPLE_DECISION), { status: 200 });
+    });
+
+    renderWithQuery(<CitizenView scenarioId="bagnoli" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("citizen-zone-status")).toHaveTextContent("Zona molto affollata");
+    });
+    expect(document.body.textContent).not.toContain("priorita' sicurezza applicata");
+    expect(document.body.textContent).not.toContain("0.91");
+  });
+
+  it("FE-REQ-22: PlanColumn follows relevance.targets[target].order strictly", () => {
+    const multiDecision: DecisionResponse = {
+      ...SAMPLE_DECISION,
+      decision: {
+        ...SAMPLE_DECISION.decision,
+        plan: [
+          { priority: 1, action: "Prima azione operatore", target: "operator", rationale: "R1" },
+          { priority: 2, action: "Seconda azione operatore", target: "operator", rationale: "R2" },
+        ],
+      },
+      relevance: {
+        ...SAMPLE_DECISION.relevance,
+        targets: {
+          ...SAMPLE_DECISION.relevance.targets,
+          operator: {
+            order: [1, 0],
+            items: [],
+          },
+        },
+      },
+    };
+
+    render(
+      <PlanColumn
+        target="operator"
+        plan={multiDecision.decision.plan}
+        targetRelevance={multiDecision.relevance.targets.operator}
+        rounding={4}
+        narrative={multiDecision.narrative}
+      />,
+    );
+
+    const cards = screen.getAllByTestId("plan-card-operator");
+    expect(cards[0]).toHaveTextContent("Seconda azione operatore");
+    expect(cards[1]).toHaveTextContent("Prima azione operatore");
+  });
+
+  it("FE-REQ-23 & FE-REQ-25: ChatPanel falls back to PlanItem.action when narrative.items is empty and caps tourist to 3 items", () => {
+    const fiveTouristDecision: DecisionResponse = {
+      ...SAMPLE_DECISION,
+      decision: {
+        ...SAMPLE_DECISION.decision,
+        plan: [
+          { priority: 1, action: "Azione T1 (10 min)", target: "tourist", rationale: "r1" },
+          { priority: 2, action: "Azione T2", target: "tourist", rationale: "r2" },
+          { priority: 3, action: "Azione T3", target: "tourist", rationale: "r3" },
+          { priority: 4, action: "Azione T4", target: "tourist", rationale: "r4" },
+          { priority: 5, action: "Azione T5", target: "tourist", rationale: "r5" },
+        ],
+      },
+      relevance: {
+        ...SAMPLE_DECISION.relevance,
+        targets: {
+          ...SAMPLE_DECISION.relevance.targets,
+          tourist: {
+            order: [0, 1, 2, 3, 4],
+            items: [],
+          },
+        },
+      },
+      narrative: {
+        mode: "off",
+        items: [],
+      },
+    };
+
+    render(
+      <ChatPanel
+        target="tourist"
+        findings={SAMPLE_SCENARIO.findings}
+        decisionResponse={fiveTouristDecision}
+        locale="it"
+      />,
+    );
+
+    expect(screen.getByTestId("primary-message-text")).toHaveTextContent("Azione T1 (10 min)");
+    expect(screen.getByText("testo da template")).toBeInTheDocument();
+    expect(screen.getAllByTestId("alternative-item")).toHaveLength(2);
+    expect(screen.getByTestId("more-actions-notice")).toHaveTextContent("Altre 2 azioni");
+    expect(document.body.textContent).not.toContain("Azione T4");
+  });
+
+  it("FE-REQ-26: OperatorView repeat button checks determinism across two POST /decision calls", async () => {
+    let decisionCalls = 0;
+    const partialScenario: ScenarioResponse = {
+      ...SAMPLE_SCENARIO,
+      findings: SAMPLE_SCENARIO.findings.slice(0, 2),
+    };
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/scenario/")) {
+        return new Response(JSON.stringify(partialScenario), { status: 200 });
+      }
+      decisionCalls += 1;
+      return new Response(JSON.stringify(SAMPLE_DECISION), { status: 200 });
+    });
+
+    renderWithQuery(<OperatorView scenarioId="bagnoli" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("repeat-decision-button")).toBeInTheDocument();
+    });
+
+    // Partial scenario shows missing card for context
+    expect(screen.getByTestId("finding-card-context")).toHaveAttribute(
+      "data-finding-state",
+      "missing",
+    );
+
+    fireEvent.click(screen.getByTestId("repeat-decision-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("repeat-result")).toHaveTextContent("same3f9a51c7e2b84d06");
+    });
+    expect(decisionCalls).toBe(3); // 1 initial + 2 for repeat comparison
+  });
+});

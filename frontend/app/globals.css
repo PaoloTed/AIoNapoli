@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root,
+.theme-pocket {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --border: #e2e0da;
+  --text: #141a20;
+  --text-muted: #5c6874;
+  --accent: #0b6e8f;
+  --accent-soft: rgba(11, 110, 143, 0.1);
+}
+
+.theme-operator {
+  --bg: #0b1016;
+  --surface: #131a23;
+  --border: #22303d;
+  --text: #e8edf2;
+  --text-muted: #93a2b1;
+  --accent: #4fb3d9;
+  --accent-soft: rgba(79, 179, 217, 0.14);
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family:
+    var(--font-inter),
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Visible 2px focus ring never removed (DESIGN.md §4) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

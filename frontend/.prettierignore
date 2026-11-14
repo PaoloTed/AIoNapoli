@@ -1,0 +1,11 @@
+docs/
+README.md
+.next/
+out/
+node_modules/
+playwright-report/
+test-results/
+coverage/
+next-env.d.ts
+tsconfig.tsbuildinfo
+package-lock.json

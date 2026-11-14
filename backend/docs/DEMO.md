@@ -1,4 +1,4 @@
-[PIANIFICATO]
+[COMPLETATO]
 
 # Demo
 
@@ -42,7 +42,7 @@ Il limite va detto prima che lo chieda qualcuno. Un dato reale parziale e' piu' 
 
 | Data | Esecutore | Passi nel log | Leggibile in cinque righe | Note |
 |---|---|---|---|---|
-| da compilare | da compilare | | | |
+| 2026-11-14 | verifica CLI `demo --scenario bagnoli --report` + test suite | 5 (`1..5`) | si | `decision_id=23afe929acf8f472`; 4 regole R1-R4 valutate + P1 applicata; nessun log esposto a `tourist`/`citizen` |
 
 ## 5. Cosa non si mostra
 

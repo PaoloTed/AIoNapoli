@@ -1,0 +1,34 @@
+rounding: 4
+filter_threshold: null
+
+features:
+  - name: severity_score
+    type: float
+  - name: confidence
+    type: float
+  - name: affects_public_service
+    type: binary
+  - name: priority_rank
+    type: float
+  - name: affects_route
+    type: binary
+  - name: time_to_event
+    type: float
+
+weights:
+  operator:
+    severity_score: 0.40
+    confidence: 0.20
+    affects_public_service: 0.20
+    priority_rank: 0.20
+  tourist:
+    affects_route: 0.35
+    time_to_event: 0.30
+    severity_score: 0.20
+    confidence: 0.15
+  citizen:
+    affects_public_service: 0.40
+    affects_route: 0.25
+    severity_score: 0.20
+    confidence: 0.15
+

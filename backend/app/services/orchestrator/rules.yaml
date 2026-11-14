@@ -1,0 +1,37 @@
+r1:
+  density_threshold_0_1: 0.85
+  severity_min: high
+
+r2:
+  density_threshold_0_1: 0.85
+
+r3:
+  density_threshold_0_1: 0.70
+  requires_heavy_rain: true
+
+r4:
+  attendance_threshold: 10000
+  congestion_threshold_0_1: 0.70
+
+rule_precedence:
+  - R1_line2_crowding
+  - R2_conflict_route_vs_density
+  - R3_weather_capacity
+  - R4_event_surge
+
+confidence_weights:
+  mobility: 0.35
+  crowding: 0.40
+  context: 0.25
+
+monitoring_text:
+  operator: "Monitoraggio ordinario attivo sulle linee ANM, EAV e sulle zone operative."
+  tourist: "Servizi regolari: consulta gli aggiornamenti in tempo reale prima di partire."
+  citizen: "Trasporto pubblico regolare: nessuna deviazione attiva, monitoraggio continuo."
+
+alert_level_heavy_rain:
+  verde: false
+  gialla: false
+  arancione: true
+  rossa: true
+

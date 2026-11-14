@@ -1,0 +1,135 @@
+{
+  "scenarios": {
+    "bagnoli": {
+      "scenario_id": "bagnoli",
+      "title": "Regata America's Cup, Linea 2 ferma, pioggia in arrivo",
+      "findings": [
+        {
+          "agent": "mobility",
+          "type": "route_disruption",
+          "content": {
+            "zone_id": "Z_BAGNOLI",
+            "congestion": 0.88,
+            "line_id": "L2",
+            "origin": "Garibaldi",
+            "destination": "Bagnoli",
+            "estimated_time_min": 22
+          },
+          "confidence": 0.9,
+          "severity": "high",
+          "source_id": "anm",
+          "data_reference": "rss:2026-11-14T16:12:00+01:00",
+          "is_simulated": false,
+          "timestamp": "2026-11-14T16:12:00+01:00"
+        },
+        {
+          "agent": "crowding",
+          "type": "density_alert",
+          "content": {
+            "density": 0.91,
+            "zone_id": "Z_BAGNOLI",
+            "line_id": "R2",
+            "expected_attendance": 12000,
+            "note": "afflusso in crescita dalle 17:00"
+          },
+          "confidence": 0.82,
+          "severity": "high",
+          "source_id": "ir_sensors",
+          "data_reference": "occupancy:2026-11-14T17:40:00+01:00",
+          "is_simulated": true,
+          "timestamp": "2026-11-14T17:40:00+01:00"
+        },
+        {
+          "agent": "context",
+          "type": "impact_assessment",
+          "content": {
+            "heavy_rain": true,
+            "expected_attendance": 12000,
+            "zone_id": "Z_BAGNOLI",
+            "alert_level": "arancione"
+          },
+          "confidence": 0.75,
+          "severity": "medium",
+          "source_id": "open_meteo",
+          "data_reference": "weather:2026-11-14T17:00:00+01:00",
+          "is_simulated": true,
+          "timestamp": "2026-11-14T17:00:00+01:00"
+        }
+      ],
+      "vehicle_positions": [
+        {
+          "vehicle_id": "ANM-2231",
+          "route_id": "R2",
+          "latitude": 40.8206,
+          "longitude": 14.1785,
+          "bearing": 214.5,
+          "observed_at": "2026-11-14T17:39:48+01:00",
+          "source_id": "anm",
+          "is_simulated": false
+        },
+        {
+          "vehicle_id": "ANM-1514",
+          "route_id": "151",
+          "latitude": 40.8261,
+          "longitude": 14.1924,
+          "bearing": 180.0,
+          "observed_at": "2026-11-14T17:39:50+01:00",
+          "source_id": "anm",
+          "is_simulated": false
+        }
+      ]
+    },
+    "nessuna_regola": {
+      "scenario_id": "nessuna_regola",
+      "title": "Giornata ordinaria senza criticita' attive",
+      "findings": [
+        {
+          "agent": "mobility",
+          "type": "route_alternative",
+          "content": {
+            "zone_id": "Z_GARIBALDI",
+            "congestion": 0.32
+          },
+          "confidence": 0.88,
+          "severity": "low",
+          "source_id": "anm",
+          "data_reference": "gtfs:2026-11-14T10:00:00+01:00",
+          "is_simulated": false,
+          "timestamp": "2026-11-14T10:00:00+01:00"
+        },
+        {
+          "agent": "crowding",
+          "type": "density_alert",
+          "content": {
+            "density": 0.41,
+            "zone_id": "Z_MUNICIPIO"
+          },
+          "confidence": 0.85,
+          "severity": "low",
+          "source_id": "ir_sensors",
+          "data_reference": "occupancy:2026-11-14T10:00:00+01:00",
+          "is_simulated": true,
+          "timestamp": "2026-11-14T10:00:00+01:00"
+        },
+        {
+          "agent": "context",
+          "type": "impact_assessment",
+          "content": {
+            "heavy_rain": false,
+            "expected_attendance": 2500,
+            "zone_id": "Z_MUNICIPIO",
+            "alert_level": "verde"
+          },
+          "confidence": 0.90,
+          "severity": "low",
+          "source_id": "open_meteo",
+          "data_reference": "weather:2026-11-14T10:00:00+01:00",
+          "is_simulated": true,
+          "timestamp": "2026-11-14T10:00:00+01:00"
+        }
+      ],
+      "vehicle_positions": []
+    }
+  }
+}
+

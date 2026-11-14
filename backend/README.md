@@ -4,16 +4,22 @@ Backend del sistema Napoli Agentic City: connettori, agenti specializzati, orche
 
 ## Avvio
 
-```
-pip install [DA COMPLETARE]
-uvicorn [DA COMPLETARE]
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+python -m app.cli config validate
+python -m app.cli demo --scenario bagnoli --report
+uvicorn app.main:app --app-dir backend --reload --port 8000
 ```
 
 ## Test
 
-- Unit: [DA COMPLETARE]
-- Integration: [DA COMPLETARE]
-- Scenarios: [DA COMPLETARE]
+- Suite completa (offline di default con `--disable-socket`): `.venv/bin/pytest -v`
+- Unit & Contracts: `.venv/bin/pytest tests/contracts tests/unit tests/architecture -v`
+- Integration & DB: `.venv/bin/pytest tests/integration tests/db -v`
+- E2E & Scenarios: `.venv/bin/pytest tests/e2e -v`
+- Lint & Formatting: `.venv/bin/ruff check backend shared tests`
 
 ## Struttura
 

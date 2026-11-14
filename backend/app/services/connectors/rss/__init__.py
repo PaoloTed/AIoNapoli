@@ -1,0 +1,2 @@
+"""RSS connector package."""
+

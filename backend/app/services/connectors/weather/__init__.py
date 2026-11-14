@@ -1,0 +1,2 @@
+"""Weather connector package."""
+

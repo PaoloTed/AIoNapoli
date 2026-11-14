@@ -1,0 +1,79 @@
+sources:
+  protezione_civile:
+    category: civil_protection
+    confidence: 0.90
+    default_severity: high
+    max_severity: critical
+  mit:
+    category: strike
+    confidence: 0.90
+    default_severity: high
+    max_severity: critical
+  cciss:
+    category: traffic
+    confidence: 0.80
+    default_severity: medium
+    max_severity: critical
+  anm:
+    category: transit
+    confidence: 0.85
+    default_severity: medium
+    max_severity: critical
+  eav:
+    category: transit
+    confidence: 0.85
+    default_severity: medium
+    max_severity: critical
+  ilmattino:
+    category: local_press
+    confidence: 0.65
+    default_severity: medium
+    max_severity: high
+  ansa:
+    category: local_press
+    confidence: 0.65
+    default_severity: medium
+    max_severity: high
+  napolitoday:
+    category: local_press
+    confidence: 0.65
+    default_severity: medium
+    max_severity: high
+  musei:
+    category: event_venue
+    confidence: 0.60
+    default_severity: low
+    max_severity: medium
+  google_news:
+    category: aggregator
+    confidence: 0.40
+    default_severity: medium
+    max_severity: high
+
+keyword_severity:
+  critical:
+    - "allerta rossa"
+    - "emergenza"
+    - "evacuazione"
+    - "sospensione totale"
+    - "nubifragio"
+  high:
+    - "chiusura"
+    - "chius"
+    - "guasto"
+    - "interruzione"
+    - "ferma"
+    - "sciopero nazionale"
+    - "incidente"
+  medium:
+    - "rallentament"
+    - "deviazione"
+    - "coda"
+    - "traffico"
+    - "ritard"
+  low:
+    - "mostra"
+    - "visita"
+    - "orari"
+    - "apertura straordinaria"
+

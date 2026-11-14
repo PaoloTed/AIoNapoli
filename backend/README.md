@@ -31,7 +31,15 @@ uvicorn [DA COMPLETARE]
 
 ## Documenti
 
-- [AGENTS.md](docs/AGENTS.md)
-- [ORCHESTRATOR.md](docs/ORCHESTRATOR.md)
-- [CONNECTORS.md](docs/CONNECTORS.md)
-- [Schemi condivisi](../../shared/schemas/)
+- [REQUIREMENTS.md](docs/REQUIREMENTS.md) — requisiti con criterio di accettazione
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — componenti, dipendenze, punti di innesto
+- [CONTRACTS.md](docs/CONTRACTS.md) — contratti condivisi con il frontend
+- [OPERATIONS.md](docs/OPERATIONS.md) — configurazione, errori, degradazione
+- [TRACEABILITY.md](docs/TRACEABILITY.md) — matrice requisito, componente, test
+- [DECISIONS.md](docs/DECISIONS.md) — decisioni tecniche
+- [DEMO.md](docs/DEMO.md) — copione della demo
+- [METRICS.md](docs/METRICS.md) — metriche e metodo di misura
+- [AGENTS.md](docs/AGENTS.md) — agenti
+- [ORCHESTRATOR.md](docs/ORCHESTRATOR.md) — regole e priorita'
+- [CONNECTORS.md](docs/CONNECTORS.md) — connettori
+- [Schemi condivisi](../shared/schemas/)

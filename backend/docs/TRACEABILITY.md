@@ -97,6 +97,10 @@ La matrice si compila in due tempi: la colonna componente alla scrittura del cod
 | REQ-CONN-06 | `connectors/rss/parser.py` | `tests/unit/connectors/test_rss.py::test_pubdate_non_build` |
 | REQ-CONN-07 | `connectors/rss/parser.py` | `tests/unit/connectors/test_rss.py::test_mattino_e_date_italiane` |
 | REQ-CONN-08 | struttura dei connettori | `tests/architecture/test_layers.py::test_connettori_senza_soglie` |
+| REQ-CONN-09 | `connectors/gtfs/rt_client.py` | `tests/unit/connectors/test_gtfs_rt.py::test_header_identificativi` |
+| REQ-CONN-10 | `connectors/gtfs/rt_client.py` | `tests/unit/connectors/test_gtfs_rt.py::test_fonte_primaria` |
+| REQ-CONN-11 | `repositories/postgres.py` | `tests/db/test_rt_freshness.py::test_max_age` |
+| REQ-CONN-12 | `connectors/gtfs/rt_client.py` | `tests/unit/connectors/test_gtfs_rt.py::test_fallback_proxy` |
 
 ## 8. Degradazione
 
@@ -107,6 +111,8 @@ La matrice si compila in due tempi: la colonna componente alla scrittura del cod
 | REQ-DEG-03 | `agents/mobility/agent.py` | `tests/unit/agents/test_mobility.py::test_otp_spento` |
 | REQ-DEG-04 | selezione del profilo | `tests/integration/test_profiles.py::test_memory_senza_db` |
 | REQ-DEG-05 | `assumptions.md` | `tests/contracts/test_assumptions.py::test_simulazioni_dichiarate` |
+| REQ-DEG-06 | `connectors/gtfs/rt_client.py` | `tests/unit/connectors/test_gtfs_rt.py::test_proxy_spento` |
+| REQ-DEG-07 | `connectors/gtfs/rt_client.py` | `tests/unit/connectors/test_gtfs_rt.py::test_risposta_vuota` |
 
 ## 9. Non funzionali
 
@@ -133,10 +139,10 @@ La matrice si compila in due tempi: la colonna componente alla scrittura del cod
 | Rilevanza | 6 | 0 | da implementare |
 | API | 8 | 0 | da implementare |
 | Persistenza | 6 | 0 | da implementare |
-| Connettori | 8 | 0 | da implementare |
-| Degradazione | 5 | 0 | da implementare |
+| Connettori | 12 | 0 | da implementare |
+| Degradazione | 7 | 0 | da implementare |
 | Non funzionali | 10 | 0 | da implementare |
-| **Totale** | **72** | **0** | |
+| **Totale** | **78** | **0** | |
 
 La tabella si aggiorna a ogni area completata, nello stesso commit del codice. Una riga che resta a zero senza motivo e' un allarme: significa che il codice e' stato scritto senza test, oppure che il requisito non e' raggiungibile.
 

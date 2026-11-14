@@ -22,7 +22,8 @@ Conseguenza operativa: la demo puo' girare sull'intero sistema oppure solo sul c
 flowchart TB
     subgraph EXT[Sorgenti esterne]
         RSS[Feed RSS e news]
-        GTFS[GTFS ANM ed EAV]
+        GTFS[GTFS statico ANM ed EAV]
+        RT[GTFS-RT via proxy, origine ANM]
         WX[Meteo]
         OCC[Occupazione IR]
         OTP[OpenTripPlanner]
@@ -67,6 +68,7 @@ flowchart TB
 
     RSS --> C1
     GTFS --> C2
+    RT --> C2
     WX --> C3
     OCC --> C5
     C1 & C2 & C3 & C4 & C5 --> REPO
@@ -150,16 +152,32 @@ Condizioni necessarie, tutte verificabili:
 
 ## 5. I punti di innesto
 
-Il sistema e' costruito come una spina dorsale piu' quattro corsie indipendenti. Ogni corsia si attacca in un punto dichiarato e puo' essere spenta.
+Il sistema e' costruito come una spina dorsale piu' cinque corsie indipendenti. Ogni corsia si attacca in un punto dichiarato e puo' essere spenta.
 
 | Corsia | Punto di innesto | Sostituto se spenta |
 |---|---|---|
 | Persistenza | `SourceRepository` | `InMemorySourceRepository` da fixture |
 | Connettori | `SourceRepository.write` | fixture precaricate |
+| Real-time | `GtfsRtClient.fetch` | fallback con `is_simulated=true` |
 | Routing | `MobilityAgent.routing` | fixture di risposta OTP registrata |
 | Linguaggio | `narrative.render` | template deterministico |
 
 Un punto di innesto e' un'interfaccia con due implementazioni. Se un terzo componente deve essere spento senza sostituto, non e' una corsia, e' una dipendenza obbligatoria: va dichiarata come tale.
+
+### 5.1 La corsia real-time
+
+Il real-time entra come corsia separata dal GTFS statico, perche' ha un ciclo di vita diverso: il statico cambia ogni giorno, il real-time ogni dieci secondi.
+
+| Aspetto | GTFS statico | GTFS real-time |
+|---|---|---|
+| Frequenza | giornaliera | circa 10 secondi |
+| Client | `connectors/gtfs/client.py` | `connectors/gtfs/rt_client.py` |
+| Tabelle | fermate, linee, corse, orari | posizioni, aggiornamenti |
+| Fonte | ANM, EAV | ANM di superficie |
+| Fallback | nessuno, il feed e' stabile | simulazione dichiarata |
+| Effetto sul finding | itinerari | ritardi e stato reale delle corse |
+
+Una rottura del real-time non tocca il calcolo degli itinerari: l'agente legge lo statico per il percorso e il real-time come arricchimento. Se il real-time manca, il percorso esiste comunque.
 
 ## 6. Struttura dei file
 
@@ -194,6 +212,9 @@ backend/app/
       base.py                 interfaccia comune
       rss/                    parser, derivazione severity e confidence
       gtfs/
+        client.py             download e parsing del GTFS statico
+        rt_client.py          client GTFS-Realtime, header, ETag, fallback
+        rt_parser.py          normalizzazione posizioni e aggiornamenti
       weather/
       events/
       occupancy/
@@ -248,11 +269,12 @@ Un componente che attraversa due layer viola il confine. Il caso tipico da evita
 ## 9. Cosa l'architettura esclude
 
 - Il core che legge da rete o database.
-- L'orchestratore che conosce OpenTripPlanner.
+- L'orchestratore che conosce OpenTripPlanner o il proxy real-time.
 - Gli agenti che si parlano.
 - Un endpoint con logica di dominio.
 - Un connettore con soglie.
 - Un LLM che decide trigger, conflitti, priorita' o punteggi.
 - Un timestamp implicito in un calcolo.
+- Un identificativo di fonte esterna scritto nel codice invece che letto da configurazione.
 
 Queste esclusioni sono verificate da test, non da revisione manuale.

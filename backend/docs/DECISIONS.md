@@ -176,6 +176,16 @@ Formato: `D-NN`, data, stato, contesto, decisione, conseguenze, alternative scar
 **Alternative scartate**: tutti i documenti in `docs/`, scartata perché confonde il perimetro e contraddice la traccia. Documentazione generale scritta subito, scartata perché sarebbe una previsione.
 **Riferimenti**: [docs/README.md](../../docs/README.md), [SCHEMA.md](../../database/docs/SCHEMA.md), traccia punto 2.13
 
+## D-18 Real-time ANM acquisito da un proxy di terze parti
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: ANM non pubblica i propri dati real-time come feed GTFS standard. Il proxy BusOne espone per il namespace `/anm/` GTFS statico, VehiclePositions e TripUpdates in formato GTFS-RT, senza API key, con osservazioni GPS reali. La demo dichiara la Linea 2 ferma, e i bus di superficie ANM sono l'alternativa concreta da mostrare.
+**Decisione**: il connettore GTFS acquisisce una variante real-time verso il proxy. Il `source_id` dei dati resta `anm`, il `data_reference` cita l'URL del proxy con il timestamp dell'emissione. Header identificativi e endpoint in configurazione, mai nel codice. Polling con `ETag` ogni circa 10 secondi, nessun WebSocket. Le posizioni piu' vecchie di 90 secondi sono scritte ma escluse in lettura. Se il proxy non risponde o la risposta e' vuota, il connettore usa il fallback dichiarato e la demo prosegue.
+**Conseguenze**: la simulazione del real-time del trasporto di superficie cade e il finding di mobilita puo' avere `is_simulated=false` citando una fonte reale. Servono due tabelle nuove, `vehicle_positions` e `trip_updates`. Il progetto dipende da un servizio di terze parti, e la dipendenza e' mitigata dal fallback obbligatorio.
+**Alternative scartate**: usare il proxy come fonte primaria, scartata perche' viola la regola 3 anti-slop e perche' i dati originali restano di ANM. WebSocket per lo streaming, scartato perche' aggiunge una connessione persistente senza valore per la demo. Nessun real-time, scartata perche' lascia la demo su un dato simulato quando esiste un dato reale.
+**Riferimenti**: [CONNECTORS.md](CONNECTORS.md) sezione connettore GTFS real-time, [SCHEMA.md](../../database/docs/SCHEMA.md) sezioni 2.9 e 2.10, [assumptions.md](../../assumptions.md) voci A3, A7, S6, S7
+
 ## Come si aggiunge una decisione
 
 1. Assegnare il numero successivo.

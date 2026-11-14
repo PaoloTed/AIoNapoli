@@ -2,20 +2,22 @@
 
 # Schema del database
 
-Schema del database: tabelle, colonne, tipi, chiavi, indici, vincoli e unita'. Comprende le tabelle dichiarate dalla traccia e le tabelle interne necessarie al funzionamento, dichiarate come tali.
+Schema del database: tabelle, colonne, tipi, chiavi, indici, vincoli e unita'. Comprende le tabelle dichiarate dalla traccia, le due tabelle aggiunte per il real-time e le tabelle interne necessarie al funzionamento, dichiarate come tali.
 
 ## 1. Principi
 
 | Principio | Regola operativa |
 |---|---|
 | Tracciabilita' a livello di riga | ogni tabella sorgente porta `source_id`, `data_reference`, `is_simulated`, `ingested_at` |
-| Append-only sulle serie temporali | `weather_snapshots` e `occupancy_estimates` non si aggiornano, si aggiungono |
+| Append-only sulle serie temporali | `weather_snapshots`, `occupancy_estimates`, `vehicle_positions` e `trip_updates` non si aggiornano, si aggiungono |
 | Idempotenza | ogni ingestion scrive con upsert su chiave naturale |
 | Unita' dichiarate | ogni colonna numerica dichiara l'unita' nel nome o nel commento |
 | Nessun tipo proprietario | enum tramite `CHECK` testuale, non tipi Postgres, per portabilita' |
 | Geometria in EPSG:4326 | punti e poligoni in coordinate geografiche standard |
 
-## 2. Tabelle dichiarate dalla traccia
+## 2. Tabelle sorgente
+
+Le tabelle 2.1-2.8 sono nominate dalla traccia. Le tabelle 2.9-2.10 sono aggiunte dal progetto per il real-time e sono marcate come tali.
 
 ### 2.1 `stops`
 
@@ -23,7 +25,7 @@ Schema del database: tabelle, colonne, tipi, chiavi, indici, vincoli e unita'. C
 |---|---|---|---|
 | `stop_id` | text | chiave primaria | identificatore GTFS |
 | `stop_name` | text | not null | |
-| `zone_id` | text | not null, indice | zona operativa, vedi 2.10 |
+| `zone_id` | text | not null, indice | zona operativa, vedi 3.1 |
 | `geometry` | geography(Point,4326) | not null | posizione della fermata |
 | `source_id` | text | not null | ANM o EAV |
 | `data_reference` | text | not null | |
@@ -144,6 +146,51 @@ Colonne dalla traccia: `vehicle_id`, `line`, `occupancy_pct`, `is_simulated`.
 
 Chiave naturale per upsert: `(vehicle_id, line, observed_at)`.
 
+### 2.9 `vehicle_positions`
+
+Non dichiarata dalla traccia. Necessaria per il real-time reale delle linee di superficie ANM.
+
+| Colonna | Tipo | Vincolo | Note |
+|---|---|---|---|
+| `vehicle_id` | text | not null | identificatore del mezzo |
+| `route_id` | text | FK `routes`, nullable | assente quando l'abbinamento e' ambiguo |
+| `trip_id` | text | FK `trips`, nullable | assente nei casi ambigui, come dichiarato dalla fonte |
+| `observed_at` | timestamptz | not null | istante dell'osservazione GPS |
+| `latitude` | numeric(9,6) | not null | |
+| `longitude` | numeric(9,6) | not null | |
+| `bearing` | numeric(5,2) | | direzione in gradi |
+| `speed_mps` | numeric(5,2) | | velocita' in metri al secondo |
+| `zone_id` | text | nullable, indice | zona dedotta dalla geometria della fermata piu' vicina |
+| `source_id` | text | not null | `anm`, non il proxy |
+| `data_reference` | text | not null | URL del proxy con timestamp dell'emissione |
+| `is_simulated` | boolean | not null default false | true solo in fallback |
+| `ingested_at` | timestamptz | not null default now() | |
+
+Chiave naturale per upsert: `(vehicle_id, observed_at)`.
+
+### 2.10 `trip_updates`
+
+Non dichiarata dalla traccia. Necessaria per ritardi, soppressioni e fermate saltate.
+
+| Colonna | Tipo | Vincolo | Note |
+|---|---|---|---|
+| `trip_id` | text | not null, FK `trips` | |
+| `route_id` | text | FK `routes` | |
+| `stop_id` | text | FK `stops`, nullable | null per aggiornamenti a livello di corsa |
+| `stop_sequence` | integer | nullable | |
+| `arrival_delay_s` | integer | | ritardo in secondi, negativo se anticipo |
+| `departure_delay_s` | integer | | |
+| `schedule_relationship` | text | CHECK `scheduled`, `skipped`, `canceled`, `no_data` | |
+| `observed_at` | timestamptz | not null | |
+| `source_id` | text | not null | `anm` |
+| `data_reference` | text | not null | |
+| `is_simulated` | boolean | not null default false | |
+| `ingested_at` | timestamptz | not null default now() | |
+
+Chiave naturale per upsert: `(trip_id, stop_id, observed_at)`.
+
+Nota: `schedule_relationship = no_data` non significa "in orario". Un passaggio senza riscontro resta senza dato, e l'agente lo tratta come assenza, non come zero ritardo.
+
 ## 3. Tabelle interne
 
 Non sono nella traccia. Sono necessarie e vengono dichiarate come interne, non come contratto.
@@ -163,7 +210,7 @@ Regola: l'identificatore di zona e' lo stesso per mobility e crowding. Senza, R2
 | Colonna | Tipo | Note |
 |---|---|---|
 | `run_id` | bigint identity | |
-| `connector` | text | `rss`, `gtfs`, `weather`, `events`, `occupancy` |
+| `connector` | text | `rss`, `gtfs`, `gtfs-rt`, `weather`, `events`, `occupancy` |
 | `started_at` | timestamptz | |
 | `finished_at` | timestamptz | |
 | `rows_written` | integer | |
@@ -258,6 +305,26 @@ Mappatura in `rules.yaml`. Se `alert_level` e' nullo, R3 non scatta e il log lo 
 
 La tabella di mappatura e' curata a mano e vive in `database/seed/zones.csv`. Non si deduce da coordinate a runtime in demo: sarebbe un calcolo spaziale non spiegabile in cinque righe.
 
+### 4.6 `zone_id` di una posizione veicolo
+
+| Caso | Derivazione |
+|---|---|
+| `trip_id` presente | `zone_id` della fermata successiva della corsa |
+| `trip_id` assente | `zone_id` della fermata piu' vicina entro 500 metri |
+
+Se nessuna fermata e' entro 500 metri, `zone_id` resta nullo e la posizione non partecipa alle regole per zona. Non si inventa una zona.
+
+### 4.7 Eta' di un dato real-time
+
+| Caso | Trattamento |
+|---|---|
+| posizione con `observed_at` entro 90 secondi | valida |
+| posizione piu' vecchia di 90 secondi | scartata in lettura, non cancellata |
+| `trip_updates` con `schedule_relationship = no_data` | passaggio senza riscontro, non zero ritardo |
+| risposta del proxy vuota | non e' un errore, e' assenza di dati: il connettore scrive zero righe e registra `outcome=ok` |
+
+La soglia di 90 secondi replica il comportamento dichiarato dalla fonte. Non e' una scelta del progetto: e' il criterio con cui la fonte qualifica i propri dati.
+
 ## 5. Vincoli trasversali
 
 | Vincolo | Dove |
@@ -269,6 +336,7 @@ La tabella di mappatura e' curata a mano e vive in `database/seed/zones.csv`. No
 | `window_end` maggiore di `window_start` | `events` |
 | `valid_to` maggiore o uguale a `valid_from` quando presente | `service_alerts` |
 | `severity` nei quattro valori | `service_alerts`, `findings` |
+| `arrival_delay_s` e `departure_delay_s` maggiori di -3600 | `trip_updates`, un anticipo oltre un'ora e' un dato corrotto |
 
 ## 6. Indici
 
@@ -282,6 +350,10 @@ La tabella di mappatura e' curata a mano e vive in `database/seed/zones.csv`. No
 | `service_alerts` | `zone_id` | filtro per zona |
 | `weather_snapshots` | `(source_id, zone_id, forecast_at)` | ultimo snapshot per zona |
 | `occupancy_estimates` | `(line, observed_at)` | ultima stima per linea |
+| `vehicle_positions` | `(route_id, observed_at)` | ultime posizio
+| `vehicle_positions`, `trip_updates` | 24 ore | oltre non servono, il volume e' alto |ni per linea |
+| `vehicle_positions` | `zone_id` | mezzi presenti in una zona |
+| `trip_updates` | `(trip_id, stop_sequence)` | aggiornamenti di una corsa |
 
 ## 7. Viste
 
@@ -290,6 +362,8 @@ La tabella di mappatura e' curata a mano e vive in `database/seed/zones.csv`. No
 | `v_weather_latest` | ultimo snapshot per zona e per fonte | Agente Affollamento, Agente Contesto |
 | `v_occupancy_latest` | ultima stima per linea e veicolo | Agente Affollamento |
 | `v_service_alerts_active` | alert con `valid_to` nullo o futuro | Agente Mobilita, Agente Contesto |
+| `v_vehicle_positions_latest` | ultima posizione per veicolo, con `observed_at` entro 90 secondi | frontend, Agente Mobilita |
+| `v_trip_updates_latest` | ultimo aggiornamento per corsa e fermata | Agente Mobilita |
 
 I finding leggono le viste, non le serie storiche. La serie resta per le metriche e per la demo del prima e dopo.
 

@@ -25,6 +25,12 @@ La definizione operativa di ogni metrica e' in [OPERATIONS.md](OPERATIONS.md) se
 | tempo di risposta di OTP | da compilare | |
 | itinerari restituiti per la coppia Bagnoli-Fuorigrotta | da compilare | |
 | righe ingerite per connettore | da compilare | |
+| veicoli reali osservati nella zona dell'evento | da compilare | |
+| eta' media delle posizioni reali | da compilare | |
+| corse con ritardo osservato | da compilare | |
+| quota di finding con `is_simulated=false` | da compilare | |
+
+Le ultime quattro metriche sono quelle che dimostrano il valore del real-time. Se sono a zero, il passo 2 della demo non ha sostanza.
 
 ## 3. Cosa non si dichiara
 

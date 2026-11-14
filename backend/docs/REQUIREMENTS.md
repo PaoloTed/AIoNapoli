@@ -109,6 +109,10 @@ Il backend non esegue azioni sulla citta'. Propone.
 | REQ-CONN-06 | Il connettore RSS usa `pubDate` come data dell'articolo e `lastBuildDate` mai | test con feed di prova |
 | REQ-CONN-07 | Il connettore RSS decodifica Il Mattino da ISO-8859-1 e interpreta le date italiane | test sul feed registrato |
 | REQ-CONN-08 | Nessun connettore applica soglie o prioritizza | test di architettura |
+| REQ-CONN-09 | Il connettore GTFS acquisisce il real-time da un proxy con header identificativi in configurazione | test: header presenti nella richiesta, nessun header nel codice |
+| REQ-CONN-10 | `source_id` cita la fonte primaria, `data_reference` cita il proxy con timestamp | test: finding con `source_id=anm` e `data_reference` che contiene il proxy |
+| REQ-CONN-11 | Le posizioni piu' vecchie di 90 secondi non sono lette dalle regole | test: posizione vecchia esclusa, posizione recente inclusa |
+| REQ-CONN-12 | Con il proxy non raggiungibile il connettore scrive righe con `is_simulated=true` | test: fallback attivo, flag coerente |
 
 ### 2.8 Degradazione
 
@@ -119,6 +123,8 @@ Il backend non esegue azioni sulla citta'. Propone.
 | REQ-DEG-03 | Con OpenTripPlanner spento l'Agente Mobilita produce finding con `is_simulated=true` | test con servizio non raggiungibile |
 | REQ-DEG-04 | Con il database non disponibile la demo usa il repository in memoria | test di selezione del profilo |
 | REQ-DEG-05 | Ogni fallback dichiara la simulazione in `assumptions.md` | ispezione del file |
+| REQ-DEG-06 | Con il proxy real-time non raggiungibile la demo produce finding con `is_simulated=true` | test con endpoint non raggiungibile |
+| REQ-DEG-07 | Una risposta vuota del proxy real-time non produce errore | test: zero righe scritte, `outcome=ok` |
 
 ## 3. Requisiti non funzionali
 

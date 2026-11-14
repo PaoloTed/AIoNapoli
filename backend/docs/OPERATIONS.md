@@ -14,6 +14,11 @@ Configurazione, errori, degradazione, comandi. Tutto cio' che serve per eseguire
 | `SQLITE_PATH` | `.data/app.db` | richiesto solo con profilo `sqlite` |
 | `OTP_BASE_URL` | `http://localhost:8080` | endpoint GraphQL di OpenTripPlanner |
 | `OTP_TIMEOUT_S` | `5` | timeout della query, in secondi |
+| `RT_BASE_URL` | `https://proxy.busone.app/anm` | namespace del proxy GTFS-Realtime |
+| `RT_CLIENT_HEADER` | vuoto | valore di `X-BusOne-Client`, obbligatorio per l'uso continuativo |
+| `RT_USE_HEADER` | `nonprofit` | valore di `X-BusOne-Use` |
+| `RT_TIMEOUT_S` | `10` | timeout della richiesta real-time |
+| `RT_MAX_AGE_S` | `90` | eta' massima di una posizione per essere considerata valida |
 | `LLM_MODE` | `replay` | `replay`, `live`, `off` |
 | `LLM_CACHE_DIR` | `.cache/llm` | cache delle generazioni per il replay |
 | `HTTP_TIMEOUT_S` | `10` | timeout dei connettori |
@@ -130,8 +135,18 @@ Matrice di cosa succede quando un componente non e' disponibile. Ogni riga e' un
 | feed RSS | fallback con set simulato, `is_simulated=true` | alert mostrati, dichiarati simulati |
 | meteo | snapshot simulato dichiarato | R3 valutata su dati simulati |
 | sensori di occupazione | simulazione statistica | densita' stimata, dichiarata |
+| proxy real-time | posizioni simulate con `is_simulated=true` | percorso mostrato, dichiarato simulato |
+| risposta real-time vuota | zero righe, nessun errore | la demo prosegue con l'ultimo stato disponibile |
 
 Regola: la demo non richiede mai un componente esterno per produrre una decisione valida.
+
+### 4.1 Cosa non degrada
+
+| Componente | Motivo |
+|---|---|
+| contratti finding e decision | sono codice, non dipendenze |
+| core deterministico | non ha dipendenze esterne |
+| configurazione | un errore blocca l'avvio, non si degrada su configurazione invalida |
 
 ## 5. Comandi
 
@@ -155,8 +170,12 @@ uvicorn app.main:app --reload --port 8000
 ```
 python -m app.cli ingest --connector rss
 python -m app.cli ingest --connector rss --fallback
+python -m app.cli ingest --connector gtfs-rt
+python -m app.cli ingest --connector gtfs-rt --status
 python -m app.cli ingest --all --fallback
 ```
+
+Il flag `--status` interroga `/anm/status` e stampa conteggi e timestamp dell'emissione senza scrivere righe. Serve a diagnosticare prima della demo.
 
 Lo scheduler non e' in-process. Il cron esterno e' dichiarato in `infra/` e non e' parte della demo.
 
@@ -221,6 +240,9 @@ Solo metriche calcolabili da campi esistenti. Nessuna stima non misurata.
 | punteggio di rilevanza per target | contributi per feature dal calcolo di rilevanza | oggetto separato |
 | tempo di risposta di OTP | durata della query GraphQL | log di `scripts/demo_timing.py` |
 | righe ingerite per connettore | `rows_written` in `ingestion_runs` | database |
+| veicoli osservati in una zona | righe di `v_vehicle_positions_latest` con `zone_id` uguale | database |
+| eta' media delle posizioni | differenza tra `now()` e `observed_at` su `v_vehicle_positions_latest` | database |
+| corsie con ritardo osservato | righe di `v_trip_updates_latest` con `arrival_delay_s` maggiore di zero | database |
 
 ## 8. Logging
 
@@ -238,3 +260,5 @@ Solo metriche calcolabili da campi esistenti. Nessuna stima non misurata.
 | git non traccia cartelle vuote | `.gitkeep` nelle cartelle vuote |
 | feed con encoding eterogeneo | Il Mattino e' ISO-8859-1, va decodificato prima del parsing |
 | date non standard nel feed dei Vigili del Fuoco e de Il Mattino | parser dedicato, non `feedparser` puro |
+| proxy real-time di terze parti | header identificativi richiesti, uso non profit, fallback obbligatorio |
+| metropolitana non coperta dal proxy | la Linea 2 resta dichiarata via RSS, non osservata in tempo reale |

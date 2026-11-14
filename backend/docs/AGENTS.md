@@ -10,12 +10,14 @@ is_simulated, timestamp.
 
 ## Agente Mobilita
 
-- Dominio: percorsi, tempi, saturazione linee.
-- Input: stops, routes, trips, stop_times, service_alerts.
+- Dominio: percorsi, tempi, saturazione linee, stato reale delle corse di superficie.
+- Input: stops, routes, trips, stop_times, service_alerts, vehicle_positions, trip_updates.
 - Output: finding type route_disruption o route_alternative.
 - Rifiuto: manca il GTFS per la linea richiesta.
 - Rifiuto: punto di partenza o arrivo non mappato su una fermata.
 - Rifiuto: finestra temporale oltre l'orizzonte del GTFS statico senza
+  simulazione dichiarata.
+- Rifiuto: real-time richiesto per una linea non coperta dal feed, senza
   simulazione dichiarata.
 
 ## Agente Affollamento

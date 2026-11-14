@@ -1,0 +1,4 @@
+# Monthly scheduled download for GTFS and OSM PBF
+# Runs at 03:00 on the 1st day of every month
+0 3 1 * * root /usr/local/bin/download-monthly.sh >> /var/log/monthly-download.log 2>&1
+

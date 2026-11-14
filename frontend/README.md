@@ -1,3 +1,3 @@
 # Frontend
 
-Interfaccia Next.js per operatori, turisti e cittadini. Stack: Next.js. Documentazione in frontend/docs/.
+Interfaccia Next.js per operatori, turisti e cittadini. Stack: Next.js. Documentazione in frontend/docs/.ù

@@ -16,3 +16,18 @@ build/
 .vscode/
 data/
 *.pbf
+
+# artefatti di installazione locale
+*.egg-info/
+.cache/
+
+# grafo compilato di OpenTripPlanner e feed scaricati
+infra/otp/graphs/
+infra/otp/data/*.zip
+infra/otp/data/*.pbf
+
+# frontend
+.next/
+out/
+.vercel/
+coverage/

@@ -196,6 +196,56 @@ Formato: `D-NN`, data, stato, contesto, decisione, conseguenze, alternative scar
 **Alternative scartate**: aggiungere campi alla decisione, scartata per violazione del contratto; far calcolare i punteggi al frontend, scartata perche' duplicherebbe la logica di `relevance.yaml` e renderebbe il determinismo non verificabile.
 **Riferimenti**: [API.md](API.md), [CONTRACTS.md](CONTRACTS.md) sezione 7, `frontend/docs/API-CLIENT.md`
 
+## D-20 Ciclo di negoziazione nella pipeline
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: la proposta del progetto promette che l'orchestratore scarti una proposta, chieda un'alternativa a Mobilita' e indichi via Y come percorso consigliato. Il codice attuale calcola le alternative e ne sceglie una: non c'e' nessun dialogo. I colleghi hanno chiesto esplicitamente il ricalcolo dopo la rilevazione di un ostacolo.
+**Decisione**: il ciclo entra come fase nuova della pipeline, prima delle regole, disattivabile con `ENABLE_NEGOTIATION=false`. Mobilita' propone, Imprevisti valida, se arriva una chiusura Mobilita' ripropone con il vincolo tradotto in parametri del motore, fino a un massimo di tre giri o fino a quando la proposta non cambia piu'.
+**Conseguenze**: la pipeline smette di essere una sequenza e diventa iterativa. Il determinismo va protetto con esclusioni ordinate e con il criterio "proposta identica" come uscita. Con il flag spento il comportamento e' esattamente quello di prima, e un test lo verifica.
+**Alternative scartate**: scelta tra alternative gia' calcolate, scartata perche' non e' dialogo; ciclo dentro l'agente di mobilita, scartato perche' l'agente non conosce gli ostacoli e non deve conoscerli; framework di orchestrazione esterno, scartato per la stessa ragione di D-12.
+**Riferimenti**: `implementations/01_agenti_negoziazione/03_ciclo_negoziazione.md`
+
+## D-21 Registro agenti e supervisori
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: le tre classi `MobilityAgent`, `CrowdingAgent` e `ContextAgent` esistono ma non sono invocate da nessun percorso di decisione: la pipeline legge i finding dal repository. Il progetto si presenta come agentico e nel codice non c'e' nessuna orchestrazione.
+**Decisione**: un registro dichiarativo in `registry.yaml`, un protocollo con `can_handle` e `run`, un supervisore per verticale e una blackboard per lo stato condiviso della run. Il registro si valida all'avvio e un percorso inesistente e' un errore di configurazione, non una degradazione silenziosa.
+**Conseguenze**: aggiungere un worker costa una riga nel registro. La selezione dei worker dipende dallo stato dei dati, quindi la stessa run puo' chiamare worker diversi: la trace deve registrare chi e' stato scartato e perche'. Il numero di agenti che emettono `Finding` resta tre.
+**Alternative scartate**: orchestratore monolitico che chiama sempre tutti i worker, scartato perche' non e' selezione; aggiungere altri `AgentName` all'enum, scartato perche' rompe il contratto e le regole R1-R4.
+**Riferimenti**: `implementations/01_agenti_negoziazione/02_architettura_agentica.md`
+
+## D-22 Modelli linguistici: cinque profili
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: D-09 dichiara due usi del modello, densita' e narrativa. I worker richiedono tre usi aggiuntivi: mappare un testo a una zona, estrarre una richiesta di viaggio in forma strutturata, stimare l'impatto di un evento.
+**Decisione**: cinque profili distinti, un client unico, cache su disco a due livelli (documento e prompt), modalita' `replay` come default. Temperatura zero e seed fisso sui worker produttivi, temperatura 0.4 solo sulla narrativa.
+**Conseguenze**: la demo non richiede rete. Ogni prompt e' versionato e la sua risposta e' ispezionabile prima della demo. Il modello non risolve mai la geografia: il parser estrae il testo, il geocoder risolve le coordinate, e un output che contiene `lat` o `lon` viene rifiutato interamente.
+**Alternative scartate**: modello obbligatorio, scartato per fragilita' in demo; nessun modello, scartato perche' la densita' in una zona senza sensori non e' calcolabile in modo difendibile; un solo profilo per tutti gli usi, scartato perche' costringe la narrativa alla temperatura dei worker.
+**Riferimenti**: `implementations/01_agenti_negoziazione/08_modelli_llm_e_prompt.md`, D-09
+
+## D-23 Il validatore produce vincoli, e la penalizzazione non ricalcola
+
+**Data**: 2026-11-14
+**Stato**: accettata
+**Contesto**: la prima stesura del ciclo faceva restituire al validatore un verdetto binario: percorso valido o invalido. Un evento con dodicimila persone attese avrebbe quindi invalidato il percorso, e in demo avrebbe potuto non restare alcuna alternativa reale. I colleghi hanno corretto il requisito: il validatore deve dire *come* trattare l'ostacolo, non solo *che* c'e'.
+**Decisione**: l'agente Imprevisti restituisce una lista di `TravelConstraint`, ciascuno con natura (`closure`, `penalty`, `uncertainty`), bersaglio (linea, fermata, zona, segmento), direzione, finestra temporale e `applies_at`. Solo `closure` innesca un nuovo giro di ricalcolo. `penalty` riordina le proposte esistenti. `uncertainty` si dichiara nel finding e non tocca il percorso.
+**Conseguenze**: il numero di giri dipende dal tipo di ostacolo, non dal numero di ostacoli. Si conservano percorsi validi che il verdetto binario avrebbe scartato. `TravelConstraint` e' un oggetto interno e non tocca i contratti congelati: l'unica modifica agli enum e' l'aggiunta di `cannot_validate` e `unresolved_location` a `Refusal.reason_code`.
+**Alternative scartate**: verdetto binario, scartato per il rischio di azzerare le alternative in demo; penalita' con ricalcolo, scartata perche' ricalcolare solo per riordinare e' sproporzionato e consuma un giro; penalita' ignorata, scartata perche' l'affollamento e' il cuore del racconto.
+**Riferimenti**: `implementations/01_agenti_negoziazione/04_agente_imprevisti.md`, `03_ciclo_negoziazione.md` sezione 5
+
+## D-24 Verifica dell'esclusione OTP a quattro livelli
+
+**Data**: da compilare al gate 0
+**Stato**: proposta
+**Contesto**: il ciclo deve escludere un servizio o penalizzarlo. L'API GraphQL di OTP 2.x espone `banned` (`InputBanned` con `routes`, `stops`, `trips`, `agencies`) e `unpreferred` con `unpreferredCost`, ma non documenta l'esclusione per direzione ne' per finestra temporale. La domanda "OTP sa escludere?" non ha una risposta sola.
+**Decisione**: la verifica si fa su quattro livelli (linea, fermata, segmento, direzione) e produce uno dei quattro esiti A/B/C/D descritti in `implementations/01_agenti_negoziazione/07_otp_osm.md` sezione 3. Il codice non ha due rami separati: ogni `TravelConstraint` porta `applies_at`, e la verifica decide solo quali casi finiscono nel motore e quali nel filtro a valle.
+**Conseguenze**: la frase da dire in demo dipende dall'esito. Con A o B il ricalcolo e' del motore; con C o D il sistema scarta gli itinerari che toccano la zona, ed e' una promessa piu' debole da mantenere. Va scritta dopo la verifica, non prima.
+**Alternative scartate**: dare per scontato che `banned` funzioni, scartata perche' un'ora di lavoro dopo la scoperta del contrario e' un'ora persa; dichiarare subito la feature limitata, scartata perche' `banned` e `unpreferred` esistono davvero e la limitazione sarebbe falsa.
+**Riferimenti**: `implementations/01_agenti_negoziazione/07_otp_osm.md` sezione 3, `ricerche/ricerca2/03a_cosa_ho_trovato_api.md`
+
 ## Come si aggiunge una decisione
 
 1. Assegnare il numero successivo.

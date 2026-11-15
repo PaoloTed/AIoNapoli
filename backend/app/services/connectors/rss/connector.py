@@ -198,4 +198,3 @@ class RssConnector:
             outcome="fallback",
             detail=reason,
         )
-

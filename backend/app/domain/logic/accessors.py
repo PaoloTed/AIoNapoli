@@ -44,4 +44,3 @@ def expected_attendance(finding: Finding) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         return None
     return value
-

@@ -122,4 +122,3 @@ class Finding(BaseModel):
                 f"(ammessi: {allowed_str})"
             )
         return self
-

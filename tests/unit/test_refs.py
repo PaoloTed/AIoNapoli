@@ -70,4 +70,3 @@ def test_occupancy_to_density() -> None:
         occupancy_to_density(101.0)
     with pytest.raises(ValueError):
         occupancy_to_density(True)  # type: ignore[arg-type]
-

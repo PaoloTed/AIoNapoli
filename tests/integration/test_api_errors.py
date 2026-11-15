@@ -79,4 +79,3 @@ def test_codici() -> None:
         b_mismatch = r_mismatch.json()
         assert b_mismatch["code"] == "agent_mismatch"
         assert b_mismatch["field"] == "agent"
-

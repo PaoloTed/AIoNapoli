@@ -116,4 +116,3 @@ def evaluate_all_rules(
                 agent=default_agent.value,
             )
     return results
-

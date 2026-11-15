@@ -49,4 +49,3 @@ def test_da_zero() -> None:
         assert expected_views.issubset({k for k, v in objects.items() if v == "view"})
     finally:
         conn.close()
-

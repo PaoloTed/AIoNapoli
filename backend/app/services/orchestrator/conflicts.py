@@ -137,4 +137,3 @@ def resolve_conflict(
         dominant_rule=dominant_rule,
         agents_involved=active_agents,
     )
-

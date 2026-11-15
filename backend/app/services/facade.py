@@ -25,6 +25,7 @@ from app.repositories.memory import InMemorySourceRepository
 from app.repositories.postgres import PostgresSourceRepository
 from app.services.orchestrator.config import load_config
 from app.services.orchestrator.pipeline import run_pipeline
+from app.services.orchestrator.run_supervisor import RunSupervisor
 from app.services.validation.finding_validator import (
     ValidationProblem,
     validate_decision_findings,
@@ -82,6 +83,24 @@ class BackendService:
             self.audit_store = audit
             self._db_conn = conn
         self._scenarios = _load_scenario_fixtures()
+        self.run_supervisor = RunSupervisor(
+            self.repository,
+            clock=self.clock,
+            enable_negotiation=self.config.enable_negotiation,
+        )
+
+    def execute_live_agents(
+        self,
+        zone_id: str = "Z_BAGNOLI",
+        trip_request: Any = None,
+        trace: Trace | None = None,
+    ) -> list[Finding | Any]:
+        """Execute all vertical supervisors and negotiation cycle to produce live findings."""
+        return self.run_supervisor.execute_agents(
+            zone_id=zone_id,
+            trip_request=trip_request,
+            trace=trace,
+        )
 
     def close(self) -> None:
         if self._db_conn is not None:
@@ -177,8 +196,15 @@ class BackendService:
                     field="scenario_id",
                     detail="scenario_id non puo' essere vuoto",
                 )
-            scenario = self.get_scenario_data(scenario_id)
-            findings = scenario.findings
+            if self.config.findings_source == "agents":
+                agent_results = self.execute_live_agents(zone_id="Z_BAGNOLI")
+                findings = [f for f in agent_results if isinstance(f, Finding)]
+                if not findings:
+                    scenario = self.get_scenario_data(scenario_id)
+                    findings = scenario.findings
+            else:
+                scenario = self.get_scenario_data(scenario_id)
+                findings = scenario.findings
             if not findings:
                 raise ValidationProblem(
                     status=422,

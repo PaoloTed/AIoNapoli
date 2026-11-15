@@ -19,4 +19,3 @@ def test_entro_due_secondi() -> None:
         elapsed = time.perf_counter() - t0
     assert resp.status_code == 200
     assert elapsed < 2.0, f"Decision took {elapsed:.3f}s (>= 2.0s budget)"
-

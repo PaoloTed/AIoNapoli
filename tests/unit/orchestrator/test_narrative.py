@@ -27,4 +27,3 @@ def test_llm_off(
     assert out_off.narrative.mode == "off"
     assert out_off.narrative.items == []
     assert out_replay.narrative.items
-

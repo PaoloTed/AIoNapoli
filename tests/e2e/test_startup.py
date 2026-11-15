@@ -18,4 +18,3 @@ def test_entro_tre_secondi() -> None:
     elapsed = time.perf_counter() - t0
     assert resp.status_code == 200
     assert elapsed < 3.0, f"Startup took {elapsed:.3f}s (>= 3.0s budget)"
-

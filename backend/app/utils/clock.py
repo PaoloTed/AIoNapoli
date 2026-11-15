@@ -35,4 +35,3 @@ class FixedClock:
 
     def now(self) -> datetime:
         return self._fixed_dt
-

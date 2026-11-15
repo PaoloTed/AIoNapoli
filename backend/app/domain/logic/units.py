@@ -10,4 +10,3 @@ def occupancy_to_density(occupancy_pct: float) -> float:
     if occupancy_pct < 0.0 or occupancy_pct > 100.0:
         raise ValueError("occupancy_pct deve essere compreso tra 0 e 100")
     return round(float(occupancy_pct) / 100.0, 4)
-

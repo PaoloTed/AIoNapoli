@@ -70,3 +70,33 @@ def compute_decision_id(decision: Decision) -> str:
     data.pop("timestamp", None)
     payload = canonical_json(data)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def compute_proposal_signature(proposal: Any) -> str:
+    """Compute deterministic 12-char canonical signature for a route proposal.
+
+    Compares on route_ids, stop sequence, and transfers without timestamp drift.
+    """
+    stops: list[str] = []
+    legs = getattr(proposal, "legs", ())
+    for leg in legs:
+        from_stop = getattr(leg, "from_stop_id", None) or getattr(leg, "from_stop", "")
+        to_stop = getattr(leg, "to_stop_id", None) or getattr(leg, "to_stop", "")
+        if from_stop:
+            stops.append(str(from_stop))
+        if to_stop:
+            stops.append(str(to_stop))
+
+    route_ids = sorted(str(r) for r in getattr(proposal, "route_ids", ()))
+    transfers = int(getattr(proposal, "transfers", 0))
+
+    payload = json.dumps(
+        {
+            "route_ids": route_ids,
+            "stops": stops,
+            "transfers": transfers,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]

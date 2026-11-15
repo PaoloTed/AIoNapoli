@@ -111,10 +111,12 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
             database_url=os.environ.get("DATABASE_URL", ""),
             cors_origins=cors_origins,
             log_level=os.environ.get("LOG_LEVEL", "info"),
+            enable_negotiation=os.environ.get("ENABLE_NEGOTIATION", "true").lower()
+            in ("true", "1", "yes"),
+            findings_source=os.environ.get("FINDINGS_SOURCE", "fixtures").lower(),  # type: ignore[arg-type]
         )
     except (ValidationError, ValueError) as exc:
         raise ConfigInvalidError(
             f"variabili d'ambiente non valide: {exc}",
             field="env",
         ) from exc
-

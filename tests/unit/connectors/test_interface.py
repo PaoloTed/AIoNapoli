@@ -59,4 +59,3 @@ def test_esito() -> None:
         assert isinstance(outcome.is_simulated, bool)
         assert outcome.outcome in ("ok", "fallback", "failed")
         assert outcome.detail
-

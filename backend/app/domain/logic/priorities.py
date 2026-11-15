@@ -44,4 +44,3 @@ def resolve_priority_pure(agents: list[AgentName]) -> PurePriorityWinner:
         winner_agent=winner,
         discarded_agents=tuple(unique_sorted[1:]),
     )
-

@@ -123,4 +123,3 @@ class WeatherConnector:
             outcome="fallback",
             detail=reason,
         )
-

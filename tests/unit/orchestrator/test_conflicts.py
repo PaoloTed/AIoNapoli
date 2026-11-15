@@ -26,4 +26,3 @@ def test_priorita(demo_findings: list[Finding], app_config: AppConfig) -> None:
     assert resolution.priority_code == "P1"
     assert resolution.winner_agent == AgentName.CROWDING
     assert AgentName.MOBILITY in resolution.discarded_agents
-

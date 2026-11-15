@@ -33,4 +33,3 @@ class BaseConnector(Protocol):
     def fallback(self, reason: str = "manual_fallback") -> ConnectorOutcome:
         """Execute declared simulated fallback and persist is_simulated=True rows."""
         ...
-

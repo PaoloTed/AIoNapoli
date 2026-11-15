@@ -41,4 +41,3 @@ def test_finding_e_decisione(
             assert len(store.list_decisions()) == 1
     finally:
         conn.close()
-

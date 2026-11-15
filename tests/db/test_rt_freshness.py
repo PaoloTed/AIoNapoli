@@ -91,4 +91,3 @@ def test_max_age() -> None:
             assert [r["vehicle_id"] for r in fresh_rows] == ["ANM-FRESH"]
     finally:
         conn.close()
-

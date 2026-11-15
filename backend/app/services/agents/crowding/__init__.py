@@ -1,2 +1,1 @@
 """Crowding agent package."""
-

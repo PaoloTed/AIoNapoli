@@ -28,4 +28,3 @@ def test_soglia_da_yaml(tmp_path: Path, demo_findings: list[Finding]) -> None:
     )
     cfg_raised = load_config(tmp_path)
     assert evaluate_r1(demo_findings, cfg_raised.rules).fired is False
-

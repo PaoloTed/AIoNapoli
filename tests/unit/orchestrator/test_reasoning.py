@@ -54,4 +54,3 @@ def test_contiguo_e_corto(
     assert 1 <= len(steps) <= 5
     assert [s.step for s in steps] == list(range(1, len(steps) + 1))
     assert all(len(s.outcome) <= 280 for s in steps)
-

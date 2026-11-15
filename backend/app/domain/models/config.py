@@ -155,3 +155,5 @@ class AppConfig(BaseModel):
     database_url: str = ""
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     log_level: str = "info"
+    enable_negotiation: bool = True
+    findings_source: Literal["agents", "fixtures"] = "fixtures"

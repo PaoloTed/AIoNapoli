@@ -30,4 +30,3 @@ def test_memory_senza_db(monkeypatch: pytest.MonkeyPatch) -> None:
         r_dec = client.post("/api/v1/decision", json={"scenario_id": "bagnoli"})
         assert r_dec.status_code == 200
         assert service.audit_store.get_decision(r_dec.json()["decision_id"]) is not None
-

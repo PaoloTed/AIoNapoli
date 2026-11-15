@@ -47,4 +47,3 @@ def test_finding_o_refusal() -> None:
         ContextAgent(repo).evaluate(zone_id="Z_BAGNOLI", now=now),
     ):
         assert isinstance(out, Finding)
-

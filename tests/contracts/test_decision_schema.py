@@ -22,4 +22,3 @@ def test_senza_relevance() -> None:
     assert "relevance" not in Decision.model_fields
     assert "narrative" not in Decision.model_fields
     assert "decision_id" not in Decision.model_fields
-

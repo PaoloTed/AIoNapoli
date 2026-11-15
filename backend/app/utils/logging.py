@@ -65,4 +65,3 @@ def log_event(
     )
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     logger.log(numeric_level, line)
-

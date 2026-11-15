@@ -19,6 +19,11 @@ class TraceEvent(BaseModel):
         "conflict_detected",
         "priority_applied",
         "plan_item_created",
+        "route_proposed",
+        "route_invalidated",
+        "negotiation_finished",
+        "worker_delegated",
+        "worker_outcome",
     ]
     data: dict[str, Any]
     agent: str | None = None
@@ -126,3 +131,118 @@ class Trace(BaseModel):
         self.events.append(ev)
         return ev
 
+    def route_proposed(
+        self,
+        proposal_id: str,
+        iteration: int,
+        route_ids: list[str] | tuple[str, ...],
+        duration_min: int,
+        agent: str = "mobility",
+    ) -> TraceEvent:
+        """Record an itinerary proposed by Mobility during negotiation."""
+        ev = TraceEvent(
+            seq=self._next_seq(),
+            event_type="route_proposed",
+            data={
+                "proposal_id": proposal_id,
+                "iteration": iteration,
+                "route_ids": list(route_ids),
+                "duration_min": duration_min,
+            },
+            agent=agent,
+            outcome=f"proposta {proposal_id} al giro {iteration}",
+        )
+        self.events.append(ev)
+        return ev
+
+    def route_invalidated(
+        self,
+        proposal_id: str,
+        iteration: int,
+        constraint_kinds: list[str],
+        evidence_refs: list[str],
+        agent: str = "incidents",
+    ) -> TraceEvent:
+        """Record a route proposal blocked by one or more closure constraints."""
+        ev = TraceEvent(
+            seq=self._next_seq(),
+            event_type="route_invalidated",
+            data={
+                "proposal_id": proposal_id,
+                "iteration": iteration,
+                "constraint_kinds": list(constraint_kinds),
+                "evidence_refs": list(evidence_refs),
+            },
+            agent=agent,
+            outcome=f"proposta {proposal_id} scartata al giro {iteration}",
+        )
+        self.events.append(ev)
+        return ev
+
+    def negotiation_finished(
+        self,
+        iterations: int,
+        exhausted: bool,
+        constraints_applied: list[str] | tuple[str, ...],
+        agent: str = "orchestrator",
+    ) -> TraceEvent:
+        """Record end of negotiation cycle."""
+        ev = TraceEvent(
+            seq=self._next_seq(),
+            event_type="negotiation_finished",
+            data={
+                "iterations": iterations,
+                "exhausted": exhausted,
+                "constraints_applied": list(constraints_applied),
+            },
+            agent=agent,
+            outcome="negoziazione conclusa",
+        )
+        self.events.append(ev)
+        return ev
+
+    def worker_delegated(
+        self,
+        agent: str,
+        capabilities: list[str] | tuple[str, ...],
+        can_handle_reason: str = "",
+    ) -> TraceEvent:
+        """Record delegation to a specialized domain worker."""
+        ev = TraceEvent(
+            seq=self._next_seq(),
+            event_type="worker_delegated",
+            data={
+                "agent": agent,
+                "capabilities": list(capabilities),
+                "can_handle_reason": can_handle_reason,
+            },
+            agent=agent,
+            outcome="worker delegato",
+        )
+        self.events.append(ev)
+        return ev
+
+    def worker_outcome(
+        self,
+        agent: str,
+        contributed: bool,
+        reason: str = "",
+        llm_used: str = "no",
+        elapsed_ms: int = 0,
+    ) -> TraceEvent:
+        """Record outcome returned by a specialized domain worker."""
+        ev = TraceEvent(
+            seq=self._next_seq(),
+            event_type="worker_outcome",
+            data={
+                "agent": agent,
+                "contributed": contributed,
+                "reason": reason,
+                "llm_used": llm_used,
+                "elapsed_ms": elapsed_ms,
+            },
+            agent=agent,
+            outcome="contribuito" if contributed else f"rifiutato: {reason}",
+        )
+        self.events.append(ev)
+        return ev

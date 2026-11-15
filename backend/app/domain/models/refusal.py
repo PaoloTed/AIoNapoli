@@ -18,6 +18,8 @@ REFUSAL_CODES: frozenset[str] = frozenset(
         "missing_alert_level",
         "missing_time_window",
         "unsourced_alert",
+        "cannot_validate",
+        "unresolved_location",
     }
 )
 
@@ -31,4 +33,3 @@ class Refusal(BaseModel):
     reason_code: str = Field(min_length=1)
     missing_input: list[str]
     detail: str = Field(min_length=1)
-

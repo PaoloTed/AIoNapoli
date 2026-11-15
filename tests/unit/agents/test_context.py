@@ -33,4 +33,3 @@ def test_rifiuto_senza_allerta() -> None:
     res_none_level = agent.evaluate(zone_id="Z_BAGNOLI")
     assert isinstance(res_none_level, Refusal)
     assert res_none_level.reason_code == "missing_alert_level"
-

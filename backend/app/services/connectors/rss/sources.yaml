@@ -1,0 +1,14 @@
+version: 1
+sources:
+  - id: anm_news
+    name: "ANM Notizie e Deviazioni"
+    type: anm_scraper
+    source_id: anm
+    frequency: oraria
+    url: "https://www.anm.it/s/notizia-home/Notizia_Home__c/Default?language=it"
+  - id: rss_ilmattino
+    name: "Il Mattino Mobilita Napoli"
+    type: rss_feed
+    source_id: il_mattino
+    frequency: oraria
+    url: "https://www.ilmattino.it/rss/napoli.xml"

@@ -47,4 +47,3 @@ monitoring_text:
         load_config()
     assert exc_env.value.code == "config_invalid"
     assert exc_env.value.field == "env"
-

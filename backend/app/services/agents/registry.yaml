@@ -1,0 +1,37 @@
+version: 1
+order:
+  - mobility
+  - crowding
+  - context
+
+agents:
+  mobility:
+    supervisor: app.services.agents.mobility.supervisor:MobilitySupervisor
+    workers:
+      - app.services.agents.mobility.workers:GtfsReader
+      - app.services.agents.mobility.workers:RealtimeReader
+      - app.services.agents.mobility.workers:RoutePlanner
+      - app.services.agents.mobility.workers:AlternativeComparator
+      - app.services.agents.mobility.workers:StreetMapper
+    emits_finding: route_alternative
+    priority: P2
+
+  crowding:
+    supervisor: app.services.agents.crowding.supervisor:CrowdingSupervisor
+    workers:
+      - app.services.agents.crowding.workers:OccupancyReader
+      - app.services.agents.crowding.workers:EventForecaster
+      - app.services.agents.crowding.workers:DensityEstimator
+      - app.services.agents.crowding.workers:ZoneAggregator
+    emits_finding: density_alert
+    priority: P1
+
+  context:
+    supervisor: app.services.agents.context.supervisor:ContextSupervisor
+    workers:
+      - app.services.agents.context.workers:AlertReader
+      - app.services.agents.context.workers:WeatherMapper
+      - app.services.agents.context.workers:EventWindowChecker
+      - app.services.agents.context.workers:ImpactAssessor
+    emits_finding: impact_assessment
+    priority: P3

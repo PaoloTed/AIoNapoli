@@ -59,4 +59,3 @@ def demo_findings() -> list[Finding]:
             timestamp=datetime(2026, 11, 14, 16, 0, 0, tzinfo=timezone.utc),
         ),
     ]
-

@@ -143,4 +143,3 @@ def decide(
 ) -> Decision:
     """Pure core entry point: decide(findings, config, clock) -> Decision."""
     return run_pipeline(findings=findings, config=config, clock=clock).decision
-

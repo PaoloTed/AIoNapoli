@@ -212,4 +212,3 @@ def parse_rss_feed(
             )
         )
     return items
-

@@ -70,4 +70,3 @@ def test_nessuna_regola(app_config: AppConfig, fixed_clock: FixedClock) -> None:
         PlanTarget.CITIZEN,
     }
     assert any("non scattata" in step.outcome for step in out.decision.reasoning_log)
-

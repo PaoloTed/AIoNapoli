@@ -72,4 +72,3 @@ def test_doppia_ingestion() -> None:
             assert all(c > 0 for c in counts_1)
     finally:
         conn.close()
-

@@ -98,4 +98,3 @@ class ContextAgent:
             or any(bool(e.get("is_simulated", True)) for e in events),
             timestamp=ref_now,
         )
-

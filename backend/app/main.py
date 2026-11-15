@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.middleware.errors import register_exception_handlers
 from app.api.v1.decisions import router as decisions_router
 from app.api.v1.findings import router as findings_router
+from app.api.v1.route_request import router as route_request_router
 from app.api.v1.scenarios import router as scenarios_router
 from app.services.facade import BackendService
 from app.services.orchestrator.config import load_config
@@ -48,8 +49,8 @@ def create_app(service: BackendService | None = None) -> FastAPI:
     application.include_router(findings_router)
     application.include_router(decisions_router)
     application.include_router(scenarios_router)
+    application.include_router(route_request_router)
     return application
 
 
 app = create_app()
-

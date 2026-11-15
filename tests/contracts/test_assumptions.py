@@ -29,4 +29,3 @@ def test_simulazioni_dichiarate() -> None:
                 assert source_keywords[src] in assumptions_text, (
                     f"Simulazione per '{src}' non dichiarata in assumptions.md"
                 )
-

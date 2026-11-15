@@ -41,4 +41,3 @@ def test_hash_stabile() -> None:
     h1 = hashlib.sha256(c1.encode("utf-8")).hexdigest()
     h2 = hashlib.sha256(c2.encode("utf-8")).hexdigest()
     assert h1 == h2
-

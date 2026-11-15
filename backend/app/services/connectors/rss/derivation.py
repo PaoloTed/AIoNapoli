@@ -80,4 +80,3 @@ def derive_severity_and_confidence(
         confidence=confidence,
         matched_keyword=None,
     )
-

@@ -89,4 +89,3 @@ def test_rifiuto_non_500() -> None:
     body = resp.json()
     assert body["code"] == "agent_refusal"
     assert body["refusal"]["reason_code"] == "missing_occupancy"
-

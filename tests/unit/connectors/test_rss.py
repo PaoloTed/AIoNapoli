@@ -66,4 +66,3 @@ def test_mattino_e_date_italiane() -> None:
     assert item.zone_id == "Z_BAGNOLI"
     assert "citt" in item.body.lower()
     assert item.pub_date == datetime(2026, 11, 14, 15, 12, 0, tzinfo=timezone.utc)
-

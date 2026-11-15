@@ -170,4 +170,3 @@ class GtfsRtClient:
             outcome="fallback",
             detail=reason,
         )
-

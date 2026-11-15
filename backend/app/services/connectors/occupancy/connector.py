@@ -83,4 +83,3 @@ class OccupancyConnector:
             outcome="fallback",
             detail=reason,
         )
-

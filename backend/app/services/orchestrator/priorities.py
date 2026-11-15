@@ -15,4 +15,3 @@ def priority_label_for_agent(agent: AgentName) -> tuple[str, str]:
     """Return (P-code, Italian label) for an agent."""
     code, _, label = PRIORITY_ORDER[agent]
     return code, label
-

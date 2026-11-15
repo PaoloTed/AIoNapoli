@@ -194,6 +194,21 @@ export async function postDecision(
   return parseEnvelope<DecisionResponse>(raw, decisionResponseSchema, compatDecisionResponseSchema);
 }
 
+export async function fetchRouteRequestApi(
+  text: string,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const path = "/api/v1/route-request";
+  return requestJson(
+    path,
+    {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    },
+    signal,
+  );
+}
+
 export type RepeatDecisionResult = {
   first: CheckedEnvelope<DecisionResponse>;
   second: CheckedEnvelope<DecisionResponse>;

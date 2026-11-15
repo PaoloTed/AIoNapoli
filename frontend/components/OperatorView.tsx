@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { useDecision } from "@/hooks/useDecision";
 import { useDecisionStream } from "@/hooks/useDecisionStream";
@@ -9,6 +10,7 @@ import { extractAgentFromField, mapProblemToPresentation } from "@/lib/api";
 import {
   AGENT_ORDER,
   PLAN_TARGETS,
+  zoneId,
   type AgentName,
   type Finding,
   type PlanTarget,
@@ -17,11 +19,16 @@ import { getDict } from "@/lib/i18n";
 import { getDefaultScenarioId } from "@/lib/scenarios";
 import { AppShell } from "./AppShell";
 import { DecisionHeader } from "./DecisionHeader";
+import { DiscardRecalcPanel } from "./DiscardRecalcPanel";
 import { FindingCard } from "./FindingCard";
+import { GroundedQueryPanel } from "./GroundedQueryPanel";
 import { MapPanel } from "./MapPanel";
+import { OperatorShortcutsModal } from "./OperatorShortcutsModal";
 import { PlanColumn } from "./PlanColumn";
 import { ReasoningList } from "./ReasoningList";
+import { RelevanceDivergencePanel } from "./RelevanceDivergencePanel";
 import { RuleTimeline } from "./RuleTimeline";
+import { SensorInspectorDrawer } from "./SensorInspectorDrawer";
 import type { SystemHealth } from "./SystemStatusBar";
 import { ContractMismatchBanner, DegradedBanner } from "./states/DegradedBanner";
 import { EmptyState } from "./states/EmptyState";
@@ -29,9 +36,14 @@ import { ErrorBanner } from "./states/ErrorBanner";
 import { DecisionSkeleton, OperatorSkeleton } from "./states/Skeleton";
 
 export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }) {
+  const router = useRouter();
   const activeScenario = scenarioId?.trim() || getDefaultScenarioId();
   const d = getDict("it");
   const [mobileTarget, setMobileTarget] = useState<PlanTarget>("operator");
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [inspectorAgent, setInspectorAgent] = useState<AgentName>("crowding");
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   const scenarioState = useScenario(activeScenario);
   const scenario = scenarioState.scenario;
@@ -87,6 +99,41 @@ export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }
       : undefined;
 
   const operatorPlanItem = decisionData?.decision.plan.find((p) => p.target === "operator");
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const activeTag = (document.activeElement?.tagName || "").toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") {
+        return;
+      }
+
+      if (e.key === "1") {
+        e.preventDefault();
+        router.push(`/operator?scenario=${activeScenario}`);
+      } else if (e.key === "2") {
+        e.preventDefault();
+        router.push(`/tourist?scenario=${activeScenario}`);
+      } else if (e.key === "3") {
+        e.preventDefault();
+        router.push(`/citizen?scenario=${activeScenario}`);
+      } else if (e.key === "4") {
+        e.preventDefault();
+        router.push(`/verify?scenario=${activeScenario}`);
+      } else if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        decisionState.repeatCheck();
+      } else if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        setIsInspectorOpen((prev) => !prev);
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeScenario, decisionState, router]);
 
   return (
     <AppShell
@@ -158,23 +205,54 @@ export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }
                   alternativeSummary={operatorPlanItem?.action}
                   theme="dark"
                   locale="it"
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={setSelectedZoneId}
                 />
               </div>
 
               <div className="lg:col-span-6 space-y-4">
                 <section aria-label={d.operator.findingsTitle} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-                      {d.operator.findingsTitle}
-                    </h2>
-                    <span className="font-mono text-[12px] text-[var(--text-muted)]">
-                      {scenario.findings.length}/3
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                        {d.operator.findingsTitle}
+                      </h2>
+                      <span className="font-mono text-[12px] text-[var(--text-muted)]">
+                        {scenario.findings.length}/3
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        data-testid="sensor-inspector-trigger"
+                        onClick={() => {
+                          setInspectorAgent("crowding");
+                          setIsInspectorOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface-subtle)] px-2.5 py-1 text-[11px] font-medium text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                        title="Ispezione Telemetria Sensori Hardware (RealSense / YOLOv11)"
+                      >
+                        <span className="text-[12px]">📡</span>
+                        <span>Telemetria Sensori (S)</span>
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="shortcuts-modal-trigger"
+                        onClick={() => setIsShortcutsOpen(true)}
+                        className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--border)] bg-[var(--surface-subtle)] px-2 py-1 font-mono text-[11px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                        title="Guida Scorciatoie da Tastiera (?)"
+                      >
+                        <kbd>?</kbd>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
                     {AGENT_ORDER.map((agent) => {
                       const f = findingByAgent.get(agent);
+                      const fZone = f ? zoneId(f) : undefined;
+                      const isSelected = Boolean(fZone && fZone === selectedZoneId);
                       const agentRefusal =
                         refusalAgent === agent ? decisionState.problem?.refusal : undefined;
                       const agentErrorNotice =
@@ -190,6 +268,16 @@ export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }
                           refusal={agentRefusal}
                           errorNotice={agentErrorNotice}
                           locale="it"
+                          isSelected={isSelected}
+                          onClick={() => {
+                            if (fZone) {
+                              setSelectedZoneId(selectedZoneId === fZone ? null : fZone);
+                            }
+                          }}
+                          onInspect={() => {
+                            setInspectorAgent(agent);
+                            setIsInspectorOpen(true);
+                          }}
                         />
                       );
                     })}
@@ -228,6 +316,8 @@ export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }
                   repeatState={decisionState.repeatState}
                   locale="it"
                 />
+
+                <DiscardRecalcPanel decision={decisionData.decision} locale="it" />
 
                 <div className="space-y-4">
                   {/* Mobile tabs (< 768px) per DESIGN.md §5 */}
@@ -270,14 +360,44 @@ export function OperatorView({ scenarioId }: { scenarioId?: string | undefined }
                       />
                     ))}
                   </div>
+
+                  {/* F6: Relevance Decomposition & Target Inversion Divergence */}
+                  <RelevanceDivergencePanel
+                    relevance={decisionData.relevance}
+                    plan={decisionData.decision.plan}
+                  />
                 </div>
 
                 {/* Reasoning log shown ONLY on /operator (FE-REQ-21) */}
                 <ReasoningList steps={decisionData.decision.reasoning_log} locale="it" />
+
+                {/* Grounded Query Panel (F5: no LLM slop, strictly cited contract fields) */}
+                <GroundedQueryPanel
+                  decisionResponse={decisionData}
+                  findings={scenario.findings}
+                  refusal={decisionState.problem?.refusal}
+                  locale="it"
+                />
               </div>
             )}
           </>
         )}
+
+        {scenario && (
+          <SensorInspectorDrawer
+            isOpen={isInspectorOpen}
+            onClose={() => setIsInspectorOpen(false)}
+            initialAgent={inspectorAgent}
+            findings={scenario.findings}
+            vehiclePositions={scenario.vehicle_positions}
+            locale="it"
+          />
+        )}
+
+        <OperatorShortcutsModal
+          isOpen={isShortcutsOpen}
+          onClose={() => setIsShortcutsOpen(false)}
+        />
       </div>
     </AppShell>
   );

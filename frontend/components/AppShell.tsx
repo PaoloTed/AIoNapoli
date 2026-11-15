@@ -8,6 +8,7 @@ import { EXPECTED_CONTRACT_VERSION } from "@/lib/contracts";
 import { formatRomeDateTime, type Locale } from "@/lib/format";
 import { getDict } from "@/lib/i18n";
 import { getConfiguredScenarios, getDefaultScenarioId } from "@/lib/scenarios";
+import { isSoundEnabled, playSound, setSoundEnabled } from "@/lib/sound";
 import { SystemStatusBar, type SystemHealth } from "./SystemStatusBar";
 
 type AppShellProps = {
@@ -41,6 +42,11 @@ export function AppShell({
   const scenarios = getConfiguredScenarios();
   const activeScenario = scenarioId ?? getDefaultScenarioId();
   const [clockText, setClockText] = useState<string>("");
+  const [soundOn, setSoundOn] = useState<boolean>(true);
+
+  useEffect(() => {
+    setSoundOn(isSoundEnabled());
+  }, []);
 
   useEffect(() => {
     const updateClock = () => {
@@ -73,43 +79,59 @@ export function AppShell({
       )}
     >
       <header className="border-b border-[var(--border)] bg-[var(--surface)]">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          {/* Brand & Scenario Identity */}
-          <div className="space-y-0.5 min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                href="/"
-                className="text-[15px] font-semibold tracking-tight text-[var(--text)] hover:text-[var(--accent)] transition-colors duration-120"
-              >
-                {d.appName}
-              </Link>
-              <code
-                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[12px] text-[var(--text-muted)]"
-                data-testid="shell-scenario-id"
-              >
-                {activeScenario}
-              </code>
-              {clockText && (
-                <time
-                  className="font-mono text-[12px] text-[var(--text-muted)]"
-                  title={d.shell.timeLabel}
+        <div className="mx-auto flex max-w-[1440px] flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-3 sm:px-6">
+          {/* Brand & Scenario Identity (Top row on mobile, left block on desktop) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/"
+                  className="text-[15px] font-semibold tracking-tight text-[var(--text)] hover:text-[var(--accent)] transition-colors duration-120"
                 >
-                  {clockText}
-                </time>
+                  {d.appName}
+                </Link>
+                <code
+                  className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[11px] text-[var(--text-muted)]"
+                  data-testid="shell-scenario-id"
+                >
+                  {activeScenario}
+                </code>
+                {clockText && (
+                  <time
+                    className="font-mono text-[11px] text-[var(--text-muted)]"
+                    title={d.shell.timeLabel}
+                  >
+                    {clockText}
+                  </time>
+                )}
+              </div>
+              {scenarioTitle && (
+                <p className="truncate text-[12px] text-[var(--text-muted)]">{scenarioTitle}</p>
               )}
             </div>
-            {scenarioTitle && (
-              <p className="truncate text-[13px] text-[var(--text-muted)]">{scenarioTitle}</p>
-            )}
+
+            {/* Mobile Status Bar (visible only < md) */}
+            <div className="flex md:hidden items-center gap-2 pt-1">
+              <SystemStatusBar
+                health={health}
+                contractVersion={contractVersion}
+                contractMismatch={contractMismatch}
+                locale={locale}
+              />
+            </div>
           </div>
 
-          {/* Navigation across the 3 views */}
-          <nav aria-label="Views" className="flex flex-wrap items-center gap-1.5">
+          {/* Navigation across the 4 views (Full-width grid on mobile, inline on desktop) */}
+          <nav
+            aria-label="Views"
+            className="grid grid-cols-4 md:flex items-center gap-1 w-full md:w-auto"
+          >
             {(
               [
                 { href: "/operator", label: d.nav.operator },
                 { href: "/tourist", label: d.nav.tourist },
                 { href: "/citizen", label: d.nav.citizen },
+                { href: "/verify", label: d.nav.verify },
               ] as const
             ).map((item) => {
               const active = pathname === item.href;
@@ -119,7 +141,7 @@ export function AppShell({
                   href={navHref(item.href)}
                   aria-current={active ? "page" : undefined}
                   className={clsx(
-                    "rounded-[6px] border px-3 py-1.5 text-[13px] font-medium transition-colors duration-120",
+                    "rounded-[6px] border px-2 sm:px-3 py-1.5 text-center text-[12px] sm:text-[13px] font-medium transition-colors duration-120 truncate",
                     active
                       ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)]"
                       : "border-transparent text-[var(--text-muted)] hover:border-[var(--border)] hover:text-[var(--text)]",
@@ -131,8 +153,8 @@ export function AppShell({
             })}
           </nav>
 
-          {/* Controls: Scenario selector, optional IT/EN toggle, SystemStatusBar */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Controls: Scenario selector, optional IT/EN toggle, Desktop SystemStatusBar */}
+          <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--border)]">
             <label className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
               <span>{d.shell.scenarioLabel}</span>
               <select
@@ -141,7 +163,7 @@ export function AppShell({
                 onChange={(e) => {
                   if (e.target.value) handleScenarioSelect(e.target.value);
                 }}
-                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-1 font-mono text-[12px] normal-case tracking-normal text-[var(--text)]"
+                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-1 font-mono text-[11px] normal-case tracking-normal text-[var(--text)]"
               >
                 {!scenarios.includes(activeScenario) && <option value="">{activeScenario}</option>}
                 {scenarios.map((id) => (
@@ -152,38 +174,59 @@ export function AppShell({
               </select>
             </label>
 
-            {showLanguageSwitcher && onLocaleChange && (
-              <div
-                className="inline-flex rounded-[6px] border border-[var(--border)] bg-[var(--bg)] p-0.5"
-                role="group"
-                aria-label={d.shell.languageLabel}
-              >
-                {(["it", "en"] as const).map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => onLocaleChange(code)}
-                    aria-pressed={locale === code}
-                    data-testid={`lang-${code}`}
-                    className={clsx(
-                      "rounded-[4px] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider transition-colors duration-120",
-                      locale === code
-                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                        : "text-[var(--text-muted)] hover:text-[var(--text)]",
-                    )}
-                  >
-                    {code}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {showLanguageSwitcher && onLocaleChange && (
+                <div
+                  className="inline-flex rounded-[6px] border border-[var(--border)] bg-[var(--bg)] p-0.5"
+                  role="group"
+                  aria-label={d.shell.languageLabel}
+                >
+                  {(["it", "en"] as const).map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => onLocaleChange(code)}
+                      aria-pressed={locale === code}
+                      data-testid={`lang-${code}`}
+                      className={clsx(
+                        "rounded-[4px] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider transition-colors duration-120 cursor-pointer",
+                        locale === code
+                          ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                          : "text-[var(--text-muted)] hover:text-[var(--text)]",
+                      )}
+                    >
+                      {code}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            <SystemStatusBar
-              health={health}
-              contractVersion={contractVersion}
-              contractMismatch={contractMismatch}
-              locale={locale}
-            />
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !soundOn;
+                  setSoundOn(next);
+                  setSoundEnabled(next);
+                  if (next) playSound("click");
+                }}
+                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-1 font-mono text-[11px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+                title={soundOn ? "Effetti audio attivi (clicca per mutare)" : "Effetti audio mutati (clicca per attivare)"}
+                aria-label="Toggle effetti audio"
+                data-testid="sound-toggle-btn"
+              >
+                {soundOn ? "🔊 FX" : "🔇 FX"}
+              </button>
+
+              {/* Desktop Status Bar (hidden < md) */}
+              <div className="hidden md:flex items-center gap-2">
+                <SystemStatusBar
+                  health={health}
+                  contractVersion={contractVersion}
+                  contractMismatch={contractMismatch}
+                  locale={locale}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </header>

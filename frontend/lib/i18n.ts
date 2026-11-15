@@ -10,6 +10,7 @@ export type Dictionary = {
     operator: string;
     tourist: string;
     citizen: string;
+    verify: string;
   };
   shell: {
     scenarioLabel: string;
@@ -141,6 +142,7 @@ export const DICTIONARY: Record<Locale, Dictionary> = {
       operator: "Operatore",
       tourist: "Turista",
       citizen: "Cittadino",
+      verify: "Verifica",
     },
     shell: {
       scenarioLabel: "Scenario",
@@ -295,6 +297,7 @@ export const DICTIONARY: Record<Locale, Dictionary> = {
       operator: "Operator",
       tourist: "Tourist",
       citizen: "Citizen",
+      verify: "Verify",
     },
     shell: {
       scenarioLabel: "Scenario",

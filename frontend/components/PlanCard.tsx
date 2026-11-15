@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { NarrativeItem, PlanItem, ScoredItem } from "@/lib/contracts";
 import type { Locale } from "@/lib/format";
 import { TemplateTextChip } from "./ProvenanceChip";
@@ -24,6 +25,16 @@ export function PlanCard({
   showRationale = true,
   locale = "it",
 }: PlanCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(item.action);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+
   const narrativeText = narrativeItem
     ? locale === "en" && narrativeItem.texts.en
       ? narrativeItem.texts.en
@@ -36,9 +47,19 @@ export function PlanCard({
       data-testid={`plan-card-${item.target}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[12px] text-[var(--text)]">
-          #{item.priority}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[12px] text-[var(--text)]">
+            #{item.priority}
+          </span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="rounded-[4px] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors cursor-pointer"
+            title="Copia testo dell'azione"
+          >
+            {copied ? "Copiato!" : "Copia"}
+          </button>
+        </div>
 
         {narrativeMode !== "live" && <TemplateTextChip locale={locale} />}
       </div>

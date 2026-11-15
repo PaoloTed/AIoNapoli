@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import clsx from "clsx";
 import type { StreamStatus } from "@/hooks/useDecisionStream";
 import type { StreamEvent } from "@/lib/contracts";
 import { getDict, type Locale } from "@/lib/i18n";
@@ -14,6 +16,19 @@ type RuleTimelineProps = {
 
 export function RuleTimeline({ steps, status, onRetry, locale = "it" }: RuleTimelineProps) {
   const d = getDict(locale);
+  const [filter, setFilter] = useState<"all" | "rules" | "conflicts">("all");
+
+  const rulesCount = steps.filter((s) => s.event === "rule_evaluated").length;
+  const conflictsCount = steps.filter(
+    (s) => s.event === "conflict_detected" || s.event === "priority_applied",
+  ).length;
+
+  const filteredSteps = steps.filter((s) => {
+    if (filter === "rules") return s.event === "rule_evaluated";
+    if (filter === "conflicts")
+      return s.event === "conflict_detected" || s.event === "priority_applied";
+    return true;
+  });
 
   return (
     <section
@@ -28,6 +43,48 @@ export function RuleTimeline({ steps, status, onRetry, locale = "it" }: RuleTime
         <span className="rounded-[6px] border border-[var(--border)] px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-[var(--text-muted)]">
           {status}
         </span>
+      </div>
+
+      {/* Event Filter Pills */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <button
+          type="button"
+          onClick={() => setFilter("all")}
+          className={clsx(
+            "rounded-[4px] border px-2 py-0.5 font-mono text-[10px] transition-colors cursor-pointer",
+            filter === "all"
+              ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)] font-semibold"
+              : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]",
+          )}
+        >
+          Tutti ({steps.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter("rules")}
+          className={clsx(
+            "rounded-[4px] border px-2 py-0.5 font-mono text-[10px] transition-colors cursor-pointer",
+            filter === "rules"
+              ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text)] font-semibold"
+              : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]",
+          )}
+        >
+          Regole ({rulesCount})
+        </button>
+        {conflictsCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilter("conflicts")}
+            className={clsx(
+              "rounded-[4px] border px-2 py-0.5 font-mono text-[10px] transition-colors cursor-pointer",
+              filter === "conflicts"
+                ? "border-[#D06A32] bg-[#D06A32]/15 text-[#D06A32] font-semibold"
+                : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]",
+            )}
+          >
+            Conflitti ({conflictsCount})
+          </button>
+        )}
       </div>
 
       {status === "degraded" && (
@@ -50,11 +107,11 @@ export function RuleTimeline({ steps, status, onRetry, locale = "it" }: RuleTime
 
       {/* aria-live="polite" without stealing focus (FE-REQ-30) */}
       <ol aria-live="polite" className="space-y-2">
-        {steps.length === 0 && status !== "degraded" && (
+        {filteredSteps.length === 0 && status !== "degraded" && (
           <li className="text-[14px] text-[var(--text-muted)]">{d.operator.streamEmpty}</li>
         )}
 
-        {steps.map((step, index) => {
+        {filteredSteps.map((step, index) => {
           if (step.event === "rule_evaluated") {
             return (
               <RuleRow

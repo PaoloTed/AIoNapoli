@@ -4,7 +4,7 @@ import type { RepeatComparisonState } from "@/hooks/useDecision";
 import type { Decision, Finding } from "@/lib/contracts";
 import { formatPercent, formatRomeDateTime, type Locale } from "@/lib/format";
 import { getDict } from "@/lib/i18n";
-import { NoRulesBanner } from "./states/DegradedBanner";
+import { ConflictPanel } from "./ConflictPanel";
 
 type DecisionHeaderProps = {
   decisionId: string;
@@ -99,36 +99,12 @@ export function DecisionHeader({
         </button>
       </div>
 
-      {/* Conflict or no_rules banner (FE-REQ-08) */}
-      {decision.conflict.detected ? (
-        <div
-          className="rounded-[6px] border border-[#D06A32] bg-[var(--bg)] px-3.5 py-2.5 space-y-1"
-          data-testid="conflict-box"
-        >
-          <div className="flex items-center gap-2">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              aria-hidden="true"
-              className="shrink-0 text-[#D06A32]"
-            >
-              <polygon
-                points="6,2 10.5,10 1.5,10"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-              />
-            </svg>
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#D06A32]">
-              {d.operator.conflictDetected}
-            </span>
-          </div>
-          <p className="text-[15px] text-[var(--text)]">{decision.conflict.description}</p>
-        </div>
-      ) : (
-        <NoRulesBanner description={decision.conflict.description} locale={locale} />
-      )}
+      {/* Conflict or calm monitoring banner (FE-REQ-08) */}
+      <ConflictPanel
+        conflict={decision.conflict}
+        trigger={decision.trigger}
+        locale={locale}
+      />
 
       {/* Determinism check result row (FE-REQ-26, API-CLIENT.md §7) */}
       {repeatState.status === "done" && (

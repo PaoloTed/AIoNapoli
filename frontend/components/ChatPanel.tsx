@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import clsx from "clsx";
 import {
   congestion,
@@ -42,7 +43,32 @@ function computeZoneStatusLabel(findings: Finding[], locale: Locale): string | u
   return d.citizen.zoneNormal;
 }
 
+function extractTransitBadges(actionText: string): { label: string; mode: string }[] {
+  const badges: { label: string; mode: string }[] = [];
+  const lower = actionText.toLowerCase();
+  if (lower.includes("r2") || lower.includes("linea r2")) {
+    badges.push({ label: "Bus R2", mode: "bus" });
+  }
+  if (lower.includes("151") || lower.includes("linea 151")) {
+    badges.push({ label: "Bus 151", mode: "bus" });
+  }
+  if (lower.includes("linea 1") || lower.includes("metro 1")) {
+    badges.push({ label: "Metro L1", mode: "metro" });
+  }
+  if (lower.includes("linea 2") || lower.includes("metro 2")) {
+    badges.push({ label: "Metro L2", mode: "metro" });
+  }
+  if (lower.includes("cumana")) {
+    badges.push({ label: "Treno Cumana", mode: "rail" });
+  }
+  if (lower.includes("funicolare")) {
+    badges.push({ label: "Funicolare", mode: "funicular" });
+  }
+  return badges;
+}
+
 export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPanelProps) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const effectiveLocale: Locale = target === "citizen" ? "it" : locale;
   const d = getDict(effectiveLocale);
   const { decision, relevance, narrative } = decisionResponse;
@@ -92,6 +118,23 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
     return { text: entry.item.action, textLang: "it" };
   };
 
+  const handleSpeak = (textToSpeak: string, lang: Locale) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = lang === "en" ? "en-US" : "it-IT";
+    utterance.rate = 0.95;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
   return (
     <section
       className="space-y-4"
@@ -122,6 +165,8 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
           const estimatedTime = extractEstimatedTimeFromAction(
             `${text} ${primaryEntry.item.action}`,
           );
+          const transitBadges = extractTransitBadges(text);
+
           return (
             <article
               className={clsx(
@@ -140,6 +185,15 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
                 </span>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSpeak(text, textLang)}
+                    className="inline-flex items-center gap-1 rounded-[4px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+                    title={isSpeaking ? "Ferma lettura vocale" : "Ascolta indicazione vocale"}
+                    aria-label={isSpeaking ? "Ferma lettura vocale" : "Ascolta indicazione vocale"}
+                  >
+                    <span>{isSpeaking ? "⏹ Ferma" : "🔊 Ascolta"}</span>
+                  </button>
                   {hasSimulatedFinding && (
                     <ProvenanceChip variant="simulated" locale={effectiveLocale} />
                   )}
@@ -154,6 +208,23 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
               >
                 {text}
               </p>
+
+              {/* Transit modal badges extracted from recommendation */}
+              {transitBadges.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                    {effectiveLocale === "en" ? "Transit modes:" : "Mezzi:"}
+                  </span>
+                  {transitBadges.map((b) => (
+                    <span
+                      key={b.label}
+                      className="rounded-[4px] border border-[var(--border)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[11px] font-semibold text-[var(--text)]"
+                    >
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Show estimated time ONLY if present in action text (SCREENS.md §4) */}
               {estimatedTime && (
@@ -186,6 +257,8 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
             {secondaryEntries.map((entry) => {
               const { text, textLang } = resolveDisplayText(entry);
               const estimatedTime = extractEstimatedTimeFromAction(`${text} ${entry.item.action}`);
+              const transitBadges = extractTransitBadges(text);
+
               return (
                 <li
                   key={entry.planIndex}
@@ -201,15 +274,37 @@ export function ChatPanel({ target, findings, decisionResponse, locale }: ChatPa
                     <span className="rounded-[6px] border border-[var(--border)] px-2 py-0.5 font-mono text-[12px] text-[var(--text-muted)]">
                       #{entry.item.priority}
                     </span>
-                    {estimatedTime && (
-                      <span className="text-[13px] font-medium text-[var(--accent)]">
-                        {estimatedTime}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(text, textLang)}
+                        className="rounded-[4px] border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.2 text-[10px] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+                        title="Ascolta indicazione vocale"
+                      >
+                        🔊
+                      </button>
+                      {estimatedTime && (
+                        <span className="text-[13px] font-medium text-[var(--accent)]">
+                          {estimatedTime}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p lang={textLang} className="text-[15px] text-[var(--text)]">
                     {text}
                   </p>
+                  {transitBadges.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                      {transitBadges.map((b) => (
+                        <span
+                          key={b.label}
+                          className="rounded-[3px] border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.2 font-mono text-[10px] text-[var(--text-muted)]"
+                        >
+                          {b.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </li>
               );
             })}

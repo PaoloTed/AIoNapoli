@@ -23,6 +23,9 @@ type FindingCardProps = {
   refusal?: Refusal | undefined;
   errorNotice?: string | undefined;
   locale?: Locale;
+  isSelected?: boolean;
+  onClick?: () => void;
+  onInspect?: () => void;
 };
 
 export function FindingCard({
@@ -32,6 +35,9 @@ export function FindingCard({
   refusal,
   errorNotice,
   locale = "it",
+  isSelected = false,
+  onClick,
+  onInspect,
 }: FindingCardProps) {
   const d = getDict(locale);
   const agentLabel = d.agents[agent];
@@ -91,8 +97,11 @@ export function FindingCard({
 
   return (
     <article
+      onClick={onClick}
       className={clsx(
         "rounded-[10px] bg-[var(--surface)] p-4 space-y-3 transition-colors duration-120",
+        onClick && "cursor-pointer hover:border-[var(--accent)]",
+        isSelected && "ring-2 ring-[var(--accent)]",
         finding.is_simulated
           ? "border border-dashed border-[var(--border)]"
           : "border border-solid border-[var(--border)]",
@@ -110,6 +119,19 @@ export function FindingCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onInspect && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onInspect();
+              }}
+              className="rounded border border-[var(--border)] bg-[var(--surface-subtle)] px-2 py-0.5 font-mono text-[11px] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+              title="Ispezione Telemetria Hardware / Sensore"
+            >
+              Telemetria ↗
+            </button>
+          )}
           <ProvenanceChip variant={finding.is_simulated ? "simulated" : "real"} locale={locale} />
           <SeverityBadge severity={finding.severity} locale={locale} />
         </div>

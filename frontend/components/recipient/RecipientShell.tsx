@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import { useAppStore } from "@/lib/state/store";
 import { RecipientHeader } from "./RecipientHeader";
@@ -15,9 +15,16 @@ import { OverviewPanel } from "./overview/OverviewPanel";
 import { ChatPanel } from "./chat/ChatPanel";
 
 export function RecipientShell() {
-  const { scenario, decision, target, setTarget, lang, setLang, streamStatus, isSimulated } = useAppStore();
+  const { scenario, decision, target, setTarget, lang, setLang, streamStatus, isSimulated, startDemo, demoRequest } =
+    useAppStore();
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const findings = scenario?.findings ?? [];
+
+  useEffect(() => {
+    if (demoRequest && typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobileChatOpen(true);
+    }
+  }, [demoRequest]);
 
   return (
     <div
@@ -69,6 +76,7 @@ export function RecipientShell() {
               findings={findings}
               decision={decision}
               onOpenChat={() => setMobileChatOpen(true)}
+              onStartDemo={startDemo}
             />
             <div className="recipient-chat-desktop" style={{ position: "sticky", top: t.space[4], height: "calc(100vh - 140px)" }}>
               <ChatPanel target={target} />

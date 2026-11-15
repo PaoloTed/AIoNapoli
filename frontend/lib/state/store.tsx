@@ -42,6 +42,7 @@ export type AppStore = {
   isSimulated: boolean;
   target: Target;
   lang: Locale;
+  demoRequest: { id: number; target: Target } | null;
   setScenario: (scenario: ScenarioSnapshot | null) => void;
   setDecision: (decision: DecisionResponse | null) => void;
   setTraceEvents: (events: SortableEvent[]) => void;
@@ -50,6 +51,7 @@ export type AppStore = {
   setSimulated: (value: boolean) => void;
   setTarget: (target: Target) => void;
   setLang: (lang: Locale) => void;
+  startDemo: (target: Target) => void;
   resetStream: () => void;
 };
 
@@ -63,6 +65,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [isSimulated, setSimulated] = useState(false);
   const [target, setTarget] = useState<Target>("citizen");
   const [lang, setLang] = useState<Locale>("it");
+  const [demoRequest, setDemoRequest] = useState<{ id: number; target: Target } | null>(null);
 
   const setTraceEvents = useCallback((events: SortableEvent[]) => {
     setTraceEventsState(sortBySeq(events as TraceEvent[]));
@@ -77,6 +80,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setStreamStatus("idle");
   }, []);
 
+  const startDemo = useCallback((demoTarget: Target) => {
+    setTarget(demoTarget);
+    setDemoRequest((prev) => ({ id: (prev?.id ?? 0) + 1, target: demoTarget }));
+  }, []);
+
   const value = useMemo<AppStore>(
     () => ({
       scenario,
@@ -86,6 +94,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isSimulated,
       target,
       lang,
+      demoRequest,
       setScenario,
       setDecision,
       setTraceEvents,
@@ -94,6 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSimulated,
       setTarget,
       setLang,
+      startDemo,
       resetStream,
     }),
     [
@@ -104,8 +114,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isSimulated,
       target,
       lang,
+      demoRequest,
       setTraceEvents,
       appendTraceEvents,
+      startDemo,
       resetStream,
     ],
   );

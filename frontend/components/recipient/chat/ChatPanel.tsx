@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import { useAppStore } from "@/lib/state/store";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -16,11 +16,43 @@ import { ChatMessage, type RecipientChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { QuickActions } from "./QuickActions";
 import { retrieve } from "./retrieval";
+import { buildDemoMessages } from "./demoScripts";
 
 export function ChatPanel({ target, onClose }: { target: Target; onClose?: () => void }) {
-  const { decision, lang } = useAppStore();
+  const { decision, lang, demoRequest } = useAppStore();
   const [messages, setMessages] = useState<RecipientChatMessage[]>([]);
   const counter = useRef(0);
+  const decisionRef = useRef(decision);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  decisionRef.current = decision;
+
+  useEffect(() => {
+    if (!demoRequest || demoRequest.target !== target) return;
+
+    const demoTarget: "citizen" | "tourist" = demoRequest.target === "tourist" ? "tourist" : "citizen";
+    const script = buildDemoMessages(demoTarget, decisionRef.current, lang);
+    setMessages([]);
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    script.forEach((message, index) => {
+      timers.push(
+        setTimeout(() => {
+          setMessages((prev) => [...prev, message]);
+        }, 550 + index * 650),
+      );
+    });
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [demoRequest, target, lang]);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (element) {
+      element.scrollTo({ top: element.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages]);
 
   const ask = useCallback(
     (query: string) => {
@@ -110,6 +142,7 @@ export function ChatPanel({ target, onClose }: { target: Target; onClose?: () =>
       </header>
 
       <div
+        ref={scrollRef}
         style={{
           flex: 1,
           minHeight: 0,

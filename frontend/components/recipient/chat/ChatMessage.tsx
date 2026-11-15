@@ -57,6 +57,8 @@ export function ChatMessage({
     <div style={{ display: "grid", gap: t.space[2] }}>
       {message.plans && message.plans.length > 0 ? (
         <p style={{ margin: 0, fontSize: t.font.size.sm, color: t.color.text.secondary }}>{message.text}</p>
+      ) : message.text ? (
+        <p style={{ margin: 0, fontSize: t.font.size.sm, color: t.color.text.secondary }}>{message.text}</p>
       ) : (
         <RefusalMessage />
       )}

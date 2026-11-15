@@ -223,6 +223,64 @@ class OSMTerritoryRepository:
             (float(lon), float(lat), float(radius_m), limit),
         )
 
+    def get_ways_by_keys(self, keys: list[str]) -> list[dict[str, Any]]:
+        """Read several OSM ways in one query, preserving geometry as WKT."""
+        values = [str(key) for key in keys if str(key).strip()]
+        if not values:
+            return []
+        return self._fetchall(
+            f"""
+            SELECT osm_key, name, name_it, ref, highway, access, foot, bicycle,
+                   motor_vehicle, oneway, bridge, tunnel, layer, surface, tags,
+                   ST_AsText(geom) AS geometry, dataset_version, is_current
+            FROM "{self._schema}".osm_ways
+            WHERE osm_key = ANY(%s) AND is_current
+            ORDER BY osm_key
+            """,
+            (values,),
+        )
+
+    def measure_corridor_overlap(
+        self,
+        way_key: str,
+        line_wkt: str,
+        *,
+        buffer_m: float = 20.0,
+        metric_srid: int = 32633,
+    ) -> dict[str, float] | None:
+        """Measure how much of a leg runs along one OSM way, in metres.
+
+        A 2D proximity is only a candidate. The caller compares ``overlap_m``
+        with a mode-specific threshold before declaring a block.
+        """
+        if metric_srid <= 0:
+            raise ValueError("metric_srid non valido")
+        if buffer_m <= 0:
+            raise ValueError("buffer_m deve essere positivo")
+        rows = self._fetchall(
+            f"""
+            WITH line AS (
+                SELECT ST_Transform(ST_GeomFromText(%s, 4326), %s) AS g
+            )
+            SELECT ST_Length(
+                       ST_Intersection(
+                           ST_Buffer(ST_Transform(w.geom, %s), %s),
+                           line.g
+                       )
+                   ) AS overlap_m,
+                   ST_Distance(ST_Transform(w.geom, %s), line.g) AS distance_m
+            FROM "{self._schema}".osm_ways w CROSS JOIN line
+            WHERE w.osm_key = %s AND w.is_current
+            """,
+            (line_wkt, metric_srid, metric_srid, float(buffer_m), metric_srid, str(way_key)),
+        )
+        if not rows:
+            return None
+        return {
+            "overlap_m": float(rows[0]["overlap_m"] or 0.0),
+            "distance_m": float(rows[0]["distance_m"] or 0.0),
+        }
+
     def find_ways_intersecting(
         self,
         min_lon: float,

@@ -15,6 +15,8 @@ dependencies = [
     "PyYAML~=6.0",
     "httpx~=0.27",
     "feedparser~=6.0",
+    "requests~=2.32",
+    "beautifulsoup4~=4.12",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +39,7 @@ packages = [
     "app.api",
     "app.api.middleware",
     "app.api.v1",
+    "app.config",
     "app.db",
     "app.domain",
     "app.domain.logic",
@@ -46,6 +49,7 @@ packages = [
     "app.services.agents",
     "app.services.agents.context",
     "app.services.agents.crowding",
+    "app.services.agents.incidents",
     "app.services.agents.mobility",
     "app.services.connectors",
     "app.services.connectors.events",
@@ -53,6 +57,10 @@ packages = [
     "app.services.connectors.occupancy",
     "app.services.connectors.rss",
     "app.services.connectors.weather",
+    "app.services.ingestion",
+    "app.services.ingestion.vendor",
+    "app.services.input",
+    "app.services.llm",
     "app.services.orchestrator",
     "app.services.validation",
     "app.utils",
@@ -66,6 +74,7 @@ testpaths = ["tests"]
 markers = [
     "network: tests requiring external network access (disabled by default)",
     "db: tests requiring external Postgres database via Docker/testcontainers",
+    "live_otp: opt-in tests requiring a running OTP graph and PostgreSQL",
 ]
 addopts = "-m 'not network' --disable-socket --allow-unix-socket"
 asyncio_mode = "auto"
@@ -77,4 +86,9 @@ src = ["backend", "shared", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# Copia invariata dello scraper fornito dal team (hash verificato); non si
+# modificano gli originali esterni solo per soddisfare il linter.
+"backend/app/services/ingestion/vendor/*" = ["E501"]
 

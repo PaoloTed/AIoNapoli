@@ -329,3 +329,118 @@ python infra/otp/verify_persisted_itinerary.py \
 Esempio verificato: `1:2` → route persistita `2`;
 `1:2080_opttp2026-2030-12` → trip `2080_opttp2026-2030-12`;
 `1:6711`/`1:6112` → stop `6711`/`6112`; partenza 08:00:00, arrivo 08:12:30.
+
+## 12. Controllo di coerenza DB ↔ build OTP ↔ grafo live
+
+`check_pipeline_consistency.py` è un controllo **solo lettura**. Confronta:
+
+- `public.gtfs_datasets.source_sha256` con `data/otp-rebuild/current.json` e
+  `data/otp-rebuild/last-result.json`;
+- gli ZIP `anm.gtfs.zip`/`eav.gtfs.zip` nella build attiva;
+- `graph.obj` con il `graph_sha256` registrato;
+- il symlink `/home/r0x4n/otp-live` con la build attiva;
+- feed e numero di route esposte da OTP con il database.
+
+```bash
+/home/r0x4n/otp-1b-venv-pyproject/bin/python \
+  infra/otp/check_pipeline_consistency.py
+```
+
+Exit 0 e messaggio `PIPELINE COERENTE` se tutto coincide; exit 1 e lista dei
+problemi se DB, ZIP, build o grafo live divergono. Lo script usa `sg docker`
+per leggere il container, quindi va eseguito dall'host come utente del
+progetto. Il controllo è eseguito come `ExecStartPost` di
+`otp-graph-sync.service`: un fallimento rende l'unità fallita, senza
+modificare il grafo live. Dopo una modifica all'unità:
+
+```bash
+install -m 0644 infra/otp/systemd/otp-graph-sync.service \
+  ~/.config/systemd/user/
+systemctl --user daemon-reload
+```
+
+Test negativo verificato:
+
+```bash
+jq '.datasets.anm.source_sha256="deadbeef"' data/otp-rebuild/current.json \
+  > /tmp/current-bad.json
+python3 infra/otp/check_pipeline_consistency.py \
+  --state-file /tmp/current-bad.json --skip-otp
+# exit 1: current.json: hash diverso per 'anm'
+```
+
+## 13. Test di regressione OTP (offline e live opt-in)
+
+Suite ordinaria, senza rete:
+
+```bash
+/home/r0x4n/otp-1b-venv-pyproject/bin/python -m pytest -q
+/home/r0x4n/otp-1b-venv-pyproject/bin/ruff check backend shared tests infra
+```
+
+I test rilevanti:
+
+- `tests/unit/agents/test_mobility_default_modes.py`: `SUBWAY` in
+  `DEFAULT_MODES` e passaggio della stessa tupla dall'agente;
+- `tests/unit/agents/test_l1_closed.py`: discovery L1 per shortName+agenzia,
+  esclusione del route ID feed-scoped, alternativa presente,
+  `routing_errors=[]`;
+- `tests/unit/agents/test_otp_graph.py`: mapping feed → dataset via agencies,
+  feed arbitrari e rifiuto degli stati ambigui;
+- `tests/integration/test_journeys_api.py`: endpoint HTTP con MockTransport;
+- `tests/unit/test_pipeline_consistency.py`: controllo di coerenza.
+
+Test live, richiedono OTP e PostgreSQL già attivi:
+
+```bash
+OTP_LIVE_BASE_URL=http://127.0.0.1:8080 \
+OTP_LIVE_DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:5432/mobility' \
+/home/r0x4n/otp-1b-venv-pyproject/bin/python -m pytest -q -m live_otp \
+  --force-enable-socket tests/integration/test_otp_live.py
+```
+
+`tests/integration/test_otp_live.py` verifica L1 chiusa contro il database
+(route/trip/stop/orari), mapping multi-dataset, agente Mobility e endpoint
+HTTP. Non viene eseguito dalla suite ordinaria (`-m 'not network'`).
+
+## 14. Matrice date e limiti del grafo
+
+Origine Via Domenico Biondi (40.8943044, 14.2308735), destinazione Città della
+Scienza (40.8047221, 14.1745403), 08:00 Europe/Rome, `first=10`,
+`transit_only=true`:
+
+| Data | Esito | Itinerari | L1 |
+|---|---|---:|---|
+| 2026-11-16 | ok | 10 | presente |
+| 2026-11-21 (sabato) | ok | 10 | presente |
+| 2026-11-22 (domenica) | ok | 10 | presente |
+| 2026-12-31 | ok | 10 | presente |
+| 2027-01-01 | `NO_TRANSIT_CONNECTION_IN_SEARCH_WINDOW` | 0 | assente |
+
+ANM nel grafo corrente: `2026-11-09..2026-12-31`; EAV:
+`2025-09-15..2030-12-31`. Fuori validità ANM l'endpoint restituisce
+`status=no_route`, non una fixture.
+
+Altri casi limite:
+
+- **feed mancante**: `import-gtfs.sh` rifiuta l'archivio se mancano
+  `agency.txt`, `routes.txt`, `trips.txt`, `stops.txt` o `stop_times.txt`;
+- **ZIP invalido**: `unzip -tq` fallisce, nessun import;
+- **calendario vuoto**: `service_days` senza date → import fallito (controllo
+  aggiunto in `import-gtfs.sh`);
+- **hash diverso**: `sync_graph_from_request.sh` esce senza toccare il grafo
+  live;
+- **feed ID cambiati**: ogni build va riscoperta via `agencies`; non usare
+  `1`/`2` come costanti.
+
+## 15. Journey API e BusOne
+
+- Contratto HTTP: `docs/CONTRACT_JOURNEY_PLAN.md`
+  (`POST /api/v1/journeys/plan`).
+- Preflight BusOne: `docs/reports/busone-realtime-preflight.md`. Integrazione
+  **non implementata**: manca `X-BusOne-Client` reale e la conferma dei
+  termini per l'organizzazione.
+- Retention manuale: `docs/reports/retention-policy.md`. Nessun cleanup
+  automatico; non cancellare volumi, schemi attivi/precedenti o grafi
+  live/previous.
+- Report completo: `docs/reports/checkpoint-p1-p2.md`.

@@ -17,6 +17,7 @@ def test_da_zero() -> None:
             "003_osm_territory.sql",
             "004_disruptions.sql",
             "005_gtfs_reference_namespaces.sql",
+            "006_ingestion_pipeline.sql",
         ]
 
         applied_second = apply_migrations(conn)
@@ -57,4 +58,3 @@ def test_da_zero() -> None:
         assert expected_views.issubset({k for k, v in objects.items() if v == "view"})
     finally:
         conn.close()
-

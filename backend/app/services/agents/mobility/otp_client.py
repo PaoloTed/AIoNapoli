@@ -34,7 +34,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import httpx
 
-from app.services.agents.mobility.gtfs_ids import is_feed_scoped_id
+from app.services.agents.mobility.gtfs_ids import is_feed_scoped_id, parse_otp_id
 
 OtpMode = Literal["real", "demo"]
 TIME_TOLERANCE_S = 2.0
@@ -103,7 +103,13 @@ PLAN_QUERY = """query Plan(
           duration
           start { scheduledTime estimated { time delay } }
           end { scheduledTime estimated { time delay } }
-          route { gtfsId shortName longName mode }
+          route {
+            gtfsId
+            shortName
+            longName
+            mode
+            agency { gtfsId name }
+          }
           trip { gtfsId }
           from { name lat lon stop { gtfsId name } }
           to { name lat lon stop { gtfsId name } }
@@ -113,6 +119,20 @@ PLAN_QUERY = """query Plan(
     }
     routingErrors { code description inputField }
   }
+}"""
+
+ROUTES_QUERY = """query Routes {
+  routes {
+    gtfsId
+    shortName
+    longName
+    mode
+    agency { gtfsId name }
+  }
+}"""
+
+AGENCIES_QUERY = """query Agencies {
+  agencies { gtfsId name }
 }"""
 
 
@@ -190,6 +210,20 @@ class ItineraryPlan:
     source_id: str
     data_reference: str
     fallback_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class OtpRoute:
+    """A route discovered from the running graph, retaining feed-scoped identity."""
+
+    feed_id: str
+    gtfs_id: str
+    scoped_id: str
+    short_name: str | None
+    long_name: str | None
+    mode: str | None
+    agency_id: str | None
+    agency_name: str | None
 
 
 def _as_str(value: Any) -> str | None:
@@ -322,9 +356,7 @@ class OtpClient:
             raise ValueError("specificare depart_at oppure arrive_by, non entrambi")
         if isinstance(modes, str) or not isinstance(modes, Sequence):
             raise TypeError("modes deve essere una sequenza di modalita")
-        if isinstance(exclude_route_ids, str) or not isinstance(
-            exclude_route_ids, Sequence
-        ):
+        if isinstance(exclude_route_ids, str) or not isinstance(exclude_route_ids, Sequence):
             raise TypeError("exclude_route_ids deve essere una sequenza")
         if isinstance(first, bool) or not isinstance(first, int) or first < 1:
             raise ValueError("first deve essere un intero >= 1")
@@ -332,9 +364,7 @@ class OtpClient:
         route_ids = [str(item).strip() for item in exclude_route_ids]
         for route_id in route_ids:
             if not is_feed_scoped_id(route_id):
-                raise ValueError(
-                    f"route id non feed-scoped: {route_id!r}; usare 'feedId:routeId'"
-                )
+                raise ValueError(f"route id non feed-scoped: {route_id!r}; usare 'feedId:routeId'")
 
         modes_input = self._build_modes(list(modes), transit_only=transit_only)
         date_time = self._build_date_time(depart_at=depart_at, arrive_by=arrive_by)
@@ -374,6 +404,111 @@ class OtpClient:
         payload = self._post(variables)
         return self._parse_plan(payload)
 
+    def fetch_graph(self, query: str) -> dict[str, Any]:
+        """Run a read-only GraphQL query against the live graph.
+
+        This is used to discover feed-scoped identifiers and agencies. It is
+        deliberately unavailable in demo mode: a recorded fixture cannot
+        stand in for the current graph.
+        """
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query GraphQL vuota")
+        if self.mode == "demo":
+            raise OtpUnavailableError("scoperta del grafo non disponibile in modalita demo")
+        response = self._execute(query, {})
+        return response
+
+    def discover_routes(
+        self,
+        *,
+        short_name: str | None = None,
+        agency_name: str | None = None,
+    ) -> list[OtpRoute]:
+        """Return routes from the live graph, filtered without assuming a feed ID.
+
+        ``agency_name`` matches either the OTP agency *name* or its original
+        GTFS ``agency_id`` (for example ANM / Azienda Napoletana Mobilità).
+        """
+        data = self.fetch_graph(ROUTES_QUERY)
+        raw_routes = data.get("routes")
+        if not isinstance(raw_routes, list):
+            raise OtpInvalidResponseError("risposta OTP senza lista routes")
+
+        short_filter = short_name.strip().casefold() if short_name else None
+        agency_filter = agency_name.strip().casefold() if agency_name else None
+        discovered: list[OtpRoute] = []
+        for raw_route in raw_routes:
+            if not isinstance(raw_route, dict):
+                raise OtpInvalidResponseError("route OTP non valida")
+            scoped_id = _as_str(raw_route.get("gtfsId"))
+            if scoped_id is None:
+                raise OtpInvalidResponseError("route OTP senza gtfsId")
+            try:
+                feed_id, gtfs_id = parse_otp_id(scoped_id)
+            except ValueError as exc:
+                raise OtpInvalidResponseError(
+                    f"route OTP con gtfsId non feed-scoped: {scoped_id!r}"
+                ) from exc
+
+            short = _as_str(raw_route.get("shortName"))
+            if short_filter is not None and (short or "").casefold() != short_filter:
+                continue
+
+            agency = raw_route.get("agency")
+            agency = agency if isinstance(agency, dict) else {}
+            agency_gtfs_id = _as_str(agency.get("gtfsId"))
+            agency_gtfs_name = _as_str(agency.get("name"))
+            agency_id: str | None = None
+            if agency_gtfs_id is not None:
+                try:
+                    _, agency_id = parse_otp_id(agency_gtfs_id)
+                except ValueError as exc:
+                    raise OtpInvalidResponseError(
+                        f"agency OTP con gtfsId non feed-scoped: {agency_gtfs_id!r}"
+                    ) from exc
+            if agency_filter is not None:
+                haystack = " ".join(
+                    part for part in (agency_id, agency_gtfs_name) if part
+                ).casefold()
+                if agency_filter not in haystack:
+                    continue
+
+            discovered.append(
+                OtpRoute(
+                    feed_id=feed_id,
+                    gtfs_id=gtfs_id,
+                    scoped_id=scoped_id,
+                    short_name=short,
+                    long_name=_as_str(raw_route.get("longName")),
+                    mode=_as_str(raw_route.get("mode")),
+                    agency_id=agency_id,
+                    agency_name=agency_gtfs_name,
+                )
+            )
+        return discovered
+
+    def discover_feed_agencies(self) -> dict[str, set[str]]:
+        """Map every OTP feed ID to the original GTFS agency IDs it exposes."""
+        data = self.fetch_graph(AGENCIES_QUERY)
+        raw_agencies = data.get("agencies")
+        if not isinstance(raw_agencies, list):
+            raise OtpInvalidResponseError("risposta OTP senza lista agencies")
+        result: dict[str, set[str]] = {}
+        for raw_agency in raw_agencies:
+            if not isinstance(raw_agency, dict):
+                raise OtpInvalidResponseError("agency OTP non valida")
+            scoped_id = _as_str(raw_agency.get("gtfsId"))
+            if scoped_id is None:
+                raise OtpInvalidResponseError("agency OTP senza gtfsId")
+            try:
+                feed_id, agency_id = parse_otp_id(scoped_id)
+            except ValueError as exc:
+                raise OtpInvalidResponseError(
+                    f"agency OTP con gtfsId non feed-scoped: {scoped_id!r}"
+                ) from exc
+            result.setdefault(feed_id, set()).add(agency_id)
+        return result
+
     def _build_modes(self, modes: list[str], *, transit_only: bool) -> dict[str, Any]:
         if any(not isinstance(mode, str) for mode in modes):
             raise TypeError("modes deve contenere stringhe")
@@ -408,7 +543,14 @@ class OtpClient:
         return {key: value.isoformat()}
 
     def _post(self, variables: dict[str, Any]) -> dict[str, Any]:
-        payload = {"query": PLAN_QUERY, "variables": variables}
+        data = self._execute(PLAN_QUERY, variables)
+        plan = data.get("planConnection")
+        if not isinstance(plan, dict):
+            raise OtpInvalidResponseError("risposta OTP senza planConnection")
+        return plan
+
+    def _execute(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+        payload = {"query": query, "variables": variables}
         try:
             if self._http_client is not None:
                 response = self._http_client.post(
@@ -441,10 +583,7 @@ class OtpClient:
         data = body.get("data")
         if not isinstance(data, dict):
             raise OtpInvalidResponseError("risposta OTP senza campo data")
-        plan = data.get("planConnection")
-        if not isinstance(plan, dict):
-            raise OtpInvalidResponseError("risposta OTP senza planConnection")
-        return plan
+        return data
 
     def _parse_plan(self, plan: dict[str, Any]) -> ItineraryPlan:
         raw_errors = plan.get("routingErrors") or []
@@ -522,9 +661,7 @@ class OtpClient:
         if raw_duration is not None:
             declared = _non_negative_integer_seconds(raw_duration, "itinerary.duration")
             if abs(declared - duration) > TIME_TOLERANCE_S:
-                raise OtpInvalidResponseError(
-                    "itinerario OTP con durata incoerente con start/end"
-                )
+                raise OtpInvalidResponseError("itinerario OTP con durata incoerente con start/end")
 
         return ItineraryResult(
             start=start,
@@ -549,9 +686,7 @@ class OtpClient:
             return None
         return _required_time(raw_time, f"{label}.estimated.time")
 
-    def _parse_leg(
-        self, leg: dict[str, Any]
-    ) -> tuple[dict[str, Any], datetime, datetime]:
+    def _parse_leg(self, leg: dict[str, Any]) -> tuple[dict[str, Any], datetime, datetime]:
         mode = _as_str(leg.get("mode"))
         if mode is None:
             raise OtpInvalidResponseError("leg OTP senza mode")
@@ -582,9 +717,7 @@ class OtpClient:
         if not isinstance(from_place, dict) or not isinstance(to_place, dict):
             raise OtpInvalidResponseError("leg OTP senza from/to")
         from_lat = _response_coordinate(from_place.get("lat"), "leg.from.lat", -90.0, 90.0)
-        from_lon = _response_coordinate(
-            from_place.get("lon"), "leg.from.lon", -180.0, 180.0
-        )
+        from_lon = _response_coordinate(from_place.get("lon"), "leg.from.lon", -180.0, 180.0)
         to_lat = _response_coordinate(to_place.get("lat"), "leg.to.lat", -90.0, 90.0)
         to_lon = _response_coordinate(to_place.get("lon"), "leg.to.lon", -180.0, 180.0)
 
@@ -598,6 +731,17 @@ class OtpClient:
         route_short_name = _as_str(route.get("shortName"))
         route_id = _as_str(route.get("gtfsId"))
         trip_id = _as_str(trip.get("gtfsId"))
+        agency = route.get("agency") if isinstance(route.get("agency"), dict) else {}
+        agency_gtfs_id = _as_str(agency.get("gtfsId"))
+        agency_name = _as_str(agency.get("name"))
+        agency_id: str | None = None
+        if agency_gtfs_id is not None:
+            try:
+                _, agency_id = parse_otp_id(agency_gtfs_id)
+            except ValueError as exc:
+                raise OtpInvalidResponseError(
+                    f"leg OTP con route.agency.gtfsId non feed-scoped: {agency_gtfs_id!r}"
+                ) from exc
 
         transit_flag = leg.get("transitLeg")
         if transit_flag is not None and not isinstance(transit_flag, bool):
@@ -635,9 +779,7 @@ class OtpClient:
                     else None
                 ),
                 "end_scheduled": end_scheduled.isoformat(),
-                "end_estimated": (
-                    end_estimated.isoformat() if end_estimated is not None else None
-                ),
+                "end_estimated": (end_estimated.isoformat() if end_estimated is not None else None),
                 "end_delay_s": (
                     end.get("estimated", {}).get("delay")
                     if isinstance(end.get("estimated"), dict)
@@ -648,6 +790,10 @@ class OtpClient:
                 "route_short_name": route_short_name,
                 "route_long_name": _as_str(route.get("longName")),
                 "route_mode": _as_str(route.get("mode")),
+                "agency_id": agency_id,
+                "agency_gtfs_id": agency_gtfs_id,
+                "agency_name": agency_name,
+                "operator": agency_name or agency_id,
                 "trip_id": trip_id,
                 "from_stop_id": from_stop_id,
                 "to_stop_id": to_stop_id,
@@ -673,7 +819,7 @@ class OtpClient:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             raise OtpInvalidResponseError(f"fixture demo non leggibile: {path}") from exc
-        raw_itineraries = ((raw.get("plan") or {}).get("itineraries") or [])
+        raw_itineraries = (raw.get("plan") or {}).get("itineraries") or []
         if not isinstance(raw_itineraries, list) or not raw_itineraries:
             raise OtpInvalidResponseError("fixture demo senza itinerari")
 
@@ -705,6 +851,10 @@ class OtpClient:
                         "route_short_name": route_label,
                         "route_long_name": None,
                         "route_mode": _as_str(raw_leg.get("mode")),
+                        "agency_id": None,
+                        "agency_gtfs_id": None,
+                        "agency_name": None,
+                        "operator": None,
                         "trip_id": None,
                         "from_stop_id": _as_str(from_place.get("stopId")),
                         "to_stop_id": _as_str(to_place.get("stopId")),

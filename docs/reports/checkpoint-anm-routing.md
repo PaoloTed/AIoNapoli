@@ -417,6 +417,87 @@ Dopo il rebuild la verifica `verify_multi_dataset_itinerary.py` è stata
 rieseguita sull’artefatto corrente: feed `1`→ANM e feed `2`→EAV, 13 leg del
 caso Chiaiano tutti coerenti con i rispettivi schemi e orari.
 
+### 6.1 Simulazione interruzione totale Linea 1
+
+Interpretazione: chiusura dell’intera route metro L1, simulata con
+`preferences.transit.filters.exclude.routes = ["1:4955"]` (feed `1`=ANM).
+Non è una perturbazione salvata nel database: è una prova di routing diretta
+sul grafo corrente.
+
+Via Domenico Biondi → Città della Scienza, 2026-11-16 08:00, `first=10`,
+`transitOnly=true`, modi `WALK,BUS,RAIL,SUBWAY`:
+
+| Scenario | Itinerari | Migliore durata | Primo restituito | L1 |
+|---|---:|---:|---:|---|
+| baseline | 10 | 6.052 s (1 h 41) | 6.272 s | presente |
+| L1 chiusa | 10 | **6.353 s (1 h 46)** | 6.847 s | assente |
+
+Migliore itinerario senza L1: 08:14:12 → 10:00:05, 6.353 s, 3 cambi,
+2.139 s a piedi:
+
+| Leg | Orario | Route / trip / stop |
+|---|---|---|
+| WALK | 08:14:12 → 08:23:30 | Origin → `1:3419` SAN ROCCO FR. 122 |
+| BUS 165Q | 08:23:30 → 08:40:00 | `1:4953`; trip `1:388_CodUdp:D600_31943746`; `1:3419` → `1:3151` |
+| WALK | 08:40:00 → 08:57:29 | `1:3151` → `1:3133` FRULLONE M1 |
+| BUS 168 | 09:00:00 → 09:22:00 | `1:4702`; trip `1:388_CodUdp:D600_31935113`; `1:3133` → `1:1061` DANTE M1 |
+| WALK | 09:22:00 → 09:27:40 | `1:1061` → `2:6801` Montesanto |
+| RAIL 9. | 09:30:00 → 09:40:00 | `2:9.`; trip `2:90930_opttp2026-2030-9`; `2:6801` → `2:6804` Mostra |
+| WALK | 09:40:00 → 09:40:48 | `2:6804` → `1:2153` TECCHIO - MOSTRA |
+| BUS R7 | 09:46:00 → 09:57:41 | `1:3216`; trip `1:388_CodUdp:D600_31932034`; `1:2153` → `1:2002` Città della Scienza |
+| WALK | 09:57:41 → 10:00:05 | `1:2002` → Destination |
+
+Il primo itinerario restituito è invece 143 → C44 → C31 → C1, 6.847 s,
+3 cambi. Backend `MobilityAgent` con `anm:3499 → anm:2167` e
+`exclude_route_ids=("1:4955",)`: Finding, 5 itinerari, 6.337 s,
+`WALK → BUS 143 → WALK → BUS C44 → WALK → BUS C31 → WALK → BUS C1`.
+Nessuna delle alternative contiene L1.
+
+Da ingresso metro Chiaiano (`anm:6312`) → Città della Scienza, L1 chiusa:
+primo itinerario 168 → EAV 9. → C1, 5.311 s; migliore 167 → 168 → EAV 9 →
+C1, **4.592 s**; backend 168 → 9. → C1, 5.220 s. Anche qui nessuna L1.
+
+Verifica ID: artefatto raw
+`probe-artifacts-l1-closed/l1-closed-biondi.json`, 32 leg transit,
+`verify_multi_dataset_itinerary.py` con mapping feed `1`→ANM e `2`→EAV:
+tutti route/trip/stop/tempi coerenti, `has_l1=false`.
+
+### 6.2 Perché OTP non mostra il percorso Google 165 → C52 → L2 → R7
+
+Le entità esistono tutte nel feed ANM e sono attive il 2026-11-16:
+`165`=route 3162, `165Q`=4953, `C52`=2930, `L2`=4778 (agenzia FS),
+`R7`=3216. Il percorso non è quindi escluso per assenza di linee.
+
+Le prove mirate spiegano la differenza:
+
+- da **S. Maria a Cubito 603** (stop 3158) verso Città della Scienza,
+  includendo solo C52+L2+R7, OTP restituisce `NO_TRANSIT_CONNECTION`: le
+  fermate C52 di Sanità sono quelle del **Rione Sanità** (40.859,14.249),
+  a circa **5,0 km** da 3158, oltre il raggio di trasferimento pedonale
+  ammesso dal grafo. Se invece “Sanità” indica la zona di **Via Tirone**
+  (Chiaiano), la distanza da 3158 è di circa **482 m**, ma la C52 ANM non
+  serve Via Tirone: le linee presenti in quella zona sono 162, 165, 165Q e
+  460. Il percorso Google con C52 non è quindi riproducibile con la C52
+  del feed ANM; serve il link/place ID Google per identificare l’eventuale
+  linea o fermata diversa;
+- da **Sanità** verso Città della Scienza, OTP preferisce camminare fino a
+  Cavour (circa 12 min) e prendere L2, invece di attendere C52: C52 è
+  dominata dal cammino;
+- includendo forzatamente 165Q+C52+L2+R7, OTP costruisce il percorso, ma
+  impiega **10.814 s (3 h 0 min)** contro i **6.052 s (1 h 41 min)** del
+  migliore itinerario L1; il percorso Google è quindi Pareto-dominato e non
+  entra nei primi 10 risultati;
+- la descrizione “165 a Cardarelli → Cubito 603” non corrisponde alla
+  direzione del feed all’orario indicato: il 165Q che serve 603 passa da
+  Corso Umberto 159 alle 08:24:44 e arriva a Cubito 603 alle 08:30:33; il
+  viaggio 165Q che parte da Cardarelli alle 08:00 serve altre fermate
+  “S. Maria a Cubito”, non la 603.
+
+In sintesi: OTP non “ignora” il percorso; applica i trasferimenti pedonali e
+gli orari GTFS, e scarta un itinerario molto più lento. Google Maps può usare
+un trasferimento a piedi di 5 km, stop/boarding diversi o dati non GTFS.
+Non è stata modificata la configurazione dei limiti di trasferimento.
+
 Test eseguiti:
 
 ```text

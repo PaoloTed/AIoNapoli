@@ -1,0 +1,23 @@
+[Unit]
+Description=Napoli Agentic City - ingestion worker (RSS/ANM)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/r0x4n/hackaton2026CDS
+# Le variabili sensibili vanno in un drop-in con permessi 0600:
+#   systemctl --user edit napoli-ingestion-worker.service
+# Non inserire LLM_API_KEY in questo file versionato.
+Environment=APP_PROFILE=postgres
+Environment=LLM_MODE=off
+Environment=INGESTION_POLL_INTERVAL_S=30
+ExecStart=/home/r0x4n/otp-1b-venv-pyproject/bin/python -m app.cli ingestion run --interval 30
+Restart=on-failure
+RestartSec=20
+# Un solo worker: il lock advisory PostgreSQL rifiuta la seconda istanza.
+KillSignal=SIGTERM
+TimeoutStopSec=40
+
+[Install]
+WantedBy=default.target

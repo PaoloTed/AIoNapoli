@@ -47,6 +47,11 @@ class DisruptionRepository:
         self._gtfs_dataset_key = gtfs_dataset_key
         self._osm_dataset_key = osm_dataset_key
 
+    @property
+    def conn(self) -> Any:
+        """Read-only connection handle for a sibling read-only specialist."""
+        return self._conn
+
     def _row_to_dict(self, cur: Any, row: Any) -> dict[str, Any]:
         if isinstance(row, dict):
             return dict(row)
@@ -396,7 +401,8 @@ class DisruptionRepository:
         core = rows[0]
         links = self._fetchall(
             """
-            SELECT l.link_ref, l.entity_type, l.entity_key, l.raw_reference,
+            SELECT l.link_ref, l.entity_type, l.entity_key,
+                   r.entity_id AS entity_id, l.raw_reference,
                    l.resolution_status, l.resolution_note, l.dataset_key,
                    l.dataset_version, l.direction, l.mode, l.from_stop_id,
                    l.to_stop_id, l.from_stop_sequence, l.to_stop_sequence,
@@ -516,6 +522,96 @@ class DisruptionRepository:
     ) -> DisruptionRecord:
         return self.set_lifecycle(source_id, alert_id, LifecycleStatus.CANCELLED, at=at, note=note)
 
+    def list_relevant(
+        self,
+        start: datetime,
+        end: datetime,
+        *,
+        include_simulated: bool = False,
+    ) -> list[DisruptionRecord]:
+        """Return lifecycle-active alerts whose validity overlaps a window.
+
+        Recurrence is evaluated in Python by ``is_applicable_at``; this method
+        only narrows the database rows, keeping the query bounded.
+        """
+        if start.tzinfo is None or end.tzinfo is None:
+            raise ValueError("start/end devono essere timezone-aware")
+        if end < start:
+            raise ValueError("end non può precedere start")
+        rows = self._fetchall(
+            """
+            SELECT DISTINCT a.source_id, a.alert_id
+            FROM service_alerts a
+            WHERE a.lifecycle_status = 'active'
+              AND a.published_at <= %s
+              AND a.valid_from <= %s
+              AND (a.valid_to IS NULL OR a.valid_to >= %s)
+              AND (%s OR NOT a.is_simulated)
+              AND EXISTS (
+                  SELECT 1 FROM service_alert_links l
+                  WHERE l.source_id = a.source_id AND l.alert_id = a.alert_id
+                    AND l.is_current
+                    AND l.resolution_status IN ('resolved','unresolved','historical')
+              )
+            ORDER BY a.source_id, a.alert_id
+            """,
+            (end, end, start, include_simulated),
+        )
+        records: list[DisruptionRecord] = []
+        for row in rows:
+            record = self.get(row["source_id"], row["alert_id"])
+            if record is not None:
+                records.append(record)
+        return records
+
+    def expire_due(self, now: datetime) -> list[DisruptionRecord]:
+        """Close active alerts whose explicit valid_to has passed."""
+        rows = self._fetchall(
+            """
+            SELECT source_id, alert_id
+            FROM service_alerts
+            WHERE lifecycle_status = 'active'
+              AND valid_to IS NOT NULL AND valid_to < %s
+            ORDER BY source_id, alert_id
+            """,
+            (now,),
+        )
+        return [
+            self.set_lifecycle(
+                row["source_id"],
+                row["alert_id"],
+                LifecycleStatus.EXPIRED,
+                at=now,
+                note="valid_to superato",
+            )
+            for row in rows
+        ]
+
+    def expire_stale_unknown(self, now: datetime) -> list[DisruptionRecord]:
+        """Close unverified alerts whose unknown end reached its review TTL."""
+        rows = self._fetchall(
+            """
+            SELECT source_id, alert_id
+            FROM service_alerts
+            WHERE lifecycle_status = 'active'
+              AND valid_to IS NULL
+              AND next_review_at IS NOT NULL AND next_review_at < %s
+              AND verification_status <> 'verified'
+            ORDER BY source_id, alert_id
+            """,
+            (now,),
+        )
+        return [
+            self.set_lifecycle(
+                row["source_id"],
+                row["alert_id"],
+                LifecycleStatus.EXPIRED,
+                at=now,
+                note="scadenza ignota: revisione non effettuata",
+            )
+            for row in rows
+        ]
+
     def find_applicable(
         self,
         entity_type: LinkEntityType,
@@ -526,8 +622,13 @@ class DisruptionRepository:
         service_date: date | None = None,
         direction: Direction | None = None,
         mode: str | None = None,
+        include_simulated: bool = False,
     ) -> list[DisruptionRecord]:
-        """Return active disruptions for an exact entity and time window."""
+        """Return active disruptions for an exact entity and time window.
+
+        Simulated fixtures are excluded by default. A real journey must never
+        be changed by a demo row merely because it exists in the same table.
+        """
         if at.tzinfo is None or at.utcoffset() is None:
             raise ValueError("at deve essere timezone-aware")
         default_key = (
@@ -559,6 +660,7 @@ class DisruptionRepository:
               )
               AND (l.service_date IS NULL OR l.service_date = %s)
               AND (l.service_active IS NOT FALSE)
+              AND (%s OR NOT a.is_simulated)
             ORDER BY a.source_id, a.alert_id
             """,
             (
@@ -571,6 +673,7 @@ class DisruptionRepository:
                 mode,
                 mode,
                 service_date,
+                include_simulated,
             ),
         )
         records: list[DisruptionRecord] = []

@@ -44,7 +44,7 @@ export function useBootstrapScenario(scenarioId: string): BootstrapResult {
         );
         if (cancelled) return;
         setScenario(scenarioResult.data);
-        if (scenarioResult.isSimulated) setSimulated(true);
+        if (scenarioResult.isSimulated || scenarioResult.data.findings.some((finding) => finding.is_simulated)) setSimulated(true);
 
         const decisionResult = await withMockFallback(
           () => postDecision({ scenario_id: scenarioId }),

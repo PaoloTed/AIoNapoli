@@ -238,6 +238,8 @@ done
 IFS='|' read -r SERVICE_START SERVICE_END < <(
     psql_value -c "SELECT COALESCE(min(date)::text, ''), COALESCE(max(date)::text, '') FROM \"$STAGING_SCHEMA\".service_days"
 )
+[[ -n "$SERVICE_START" && -n "$SERVICE_END" ]] || die \
+    "calendario GTFS vuoto: service_days non contiene date utilizzabili"
 AGENCY_IDS="$(psql_value -c "SELECT COALESCE(string_agg(agency_id, ',' ORDER BY agency_id), '') FROM \"$STAGING_SCHEMA\".agency")"
 COUNTS_JSON="$(psql_value -c "
     SELECT json_build_object(

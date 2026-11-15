@@ -50,7 +50,9 @@ def _ids(
 ) -> list[str]:
     return [
         row.alert_id
-        for row in repo.find_applicable(entity_type, entity_id, at, **kwargs)
+        for row in repo.find_applicable(
+            entity_type, entity_id, at, include_simulated=True, **kwargs
+        )
         if row.source_id == SOURCE
     ]
 
@@ -110,11 +112,7 @@ def _base(
         "uncertainty": Uncertainty.LOW,
         "is_simulated": True,
         "links": links
-        or [
-            DisruptionLinkInput(
-                entity_type=LinkEntityType.ROUTE, entity_id="2", mode="rail"
-            )
-        ],
+        or [DisruptionLinkInput(entity_type=LinkEntityType.ROUTE, entity_id="2", mode="rail")],
     }
     values.update(overrides)
     return DisruptionInput.model_validate(values)
@@ -205,9 +203,9 @@ def test_temporal_lifecycle_and_direction(repo: DisruptionRepository) -> None:
         )
     )
     assert direction_alert.revision == 1
-    assert _ids(
-        repo, LinkEntityType.ROUTE, "2", NOW, direction=Direction.FORWARD
-    ) == ["directional"]
+    assert _ids(repo, LinkEntityType.ROUTE, "2", NOW, direction=Direction.FORWARD) == [
+        "directional"
+    ]
     assert "directional" not in _ids(
         repo, LinkEntityType.ROUTE, "2", NOW, direction=Direction.BACKWARD
     )

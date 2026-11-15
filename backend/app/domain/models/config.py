@@ -143,12 +143,42 @@ class AppConfig(BaseModel):
     relevance: RelevanceConfig
     app_profile: Literal["memory", "sqlite", "postgres"] = "memory"
     demo_scenario: str = "bagnoli"
-    llm_mode: Literal["replay", "live", "off"] = "replay"
+    llm_mode: Literal["off", "replay", "mock", "live"] = "replay"
+    llm_provider: str = "openai_compatible"
+    llm_base_url: str = ""
+    llm_api_key: str = Field(default="", exclude=True, repr=False)
+    llm_model: str = ""
+    llm_timeout_s: float = Field(default=30.0, gt=0.0)
+    llm_max_retries: int = Field(default=2, ge=0, le=5)
+    llm_max_output_tokens: int = Field(default=1600, gt=0, le=32000)
+    llm_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    llm_prompt_version: str = "news-extraction-1"
+    llm_schema_version: str = "1"
     llm_cache_dir: str = ".cache/llm"
+    llm_replay_dir: str = ""
+    input_agent_llm_required: bool = False
     otp_base_url: str = "http://localhost:8080"
     otp_timeout_s: float = Field(default=5.0, gt=0.0)
     routing_mode: Literal["real", "demo"] = "real"
     routing_timezone: str = "Europe/Rome"
+    journey_max_plans: int = Field(default=3, ge=1, le=3)
+    journey_budget_s: float = Field(default=15.0, gt=0.0, le=120.0)
+    journey_default_first: int = Field(default=10, ge=1, le=20)
+    ingestion_registry_path: str = ""
+    ingestion_user_agent: str = "NapoliAgenticCity/1.0 (+backend ingestion worker)"
+    ingestion_timeout_s: float = Field(default=20.0, gt=0.0)
+    ingestion_max_concurrency: int = Field(default=4, ge=1, le=8)
+    ingestion_max_retries: int = Field(default=3, ge=0, le=8)
+    ingestion_backoff_s: float = Field(default=2.0, ge=0.0)
+    ingestion_poll_interval_s: float = Field(default=30.0, gt=0.0)
+    ingestion_lease_s: int = Field(default=300, gt=0)
+    ingestion_unknown_expiry_ttl_s: int = Field(default=21600, gt=0)
+    ingestion_review_ttl_s: int = Field(default=7200, gt=0)
+    ingestion_relevance_version: str = "1"
+    geocoder_provider: Literal["none", "local", "nominatim"] = "local"
+    geocoder_base_url: str = "https://nominatim.openstreetmap.org"
+    geocoder_timeout_s: float = Field(default=8.0, gt=0.0)
+    geocoder_max_results: int = Field(default=5, ge=1, le=20)
     rt_base_url: str = "https://proxy.busone.app/anm"
     rt_client_header: str = ""
     rt_use_header: str = "nonprofit"

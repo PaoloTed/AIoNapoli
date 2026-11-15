@@ -17,7 +17,7 @@ import { getDict, type Locale } from "./i18n";
 export const REQUEST_TIMEOUT_MS = 5000;
 
 export function getApiBaseUrl(): string {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   return base.replace(/\/+$/, "");
 }
 

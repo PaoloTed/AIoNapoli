@@ -12,6 +12,7 @@ import { useAppStore } from "@/lib/state/store";
 import { MapPanel } from "@/components/operator/situation/MapPanel";
 import { SituationSidebar } from "@/components/operator/situation/SituationSidebar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LiveNewsPanel } from "@/components/operator/situation/LiveNewsPanel";
 
 export default function SituationPage() {
   const { scenario, decision } = useAppStore();
@@ -20,7 +21,7 @@ export default function SituationPage() {
   const vehicles = scenario?.vehicle_positions ?? [];
 
   return (
-    <div className="operator-grid-situation" style={{ minHeight: "calc(100vh - 92px)" }}>
+    <><LiveNewsPanel /><div className="operator-grid-situation" style={{ minHeight: "calc(100vh - 92px)" }}>
       <MapPanel
         findings={findings}
         vehicles={vehicles}
@@ -40,6 +41,6 @@ export default function SituationPage() {
           description="Lo scenario non espone ancora finding: attendi il bootstrap o verifica la sorgente dati."
         />
       )}
-    </div>
+    </div></>
   );
 }

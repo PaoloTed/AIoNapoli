@@ -1,0 +1,1452 @@
+version: 1
+generated_from:
+- fonti-rss-napoli.md (14/11/2026)
+- fonti-rss-napoli-aggiuntive.md (14/11/2026)
+- anm_info/anm_scraper.py (team, v1.1.0)
+defaults:
+  timezone: Europe/Rome
+  language: it
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+sources:
+- source_id: eav_rail
+  name: EAV - Infomobilita Ferrovia
+  url: https://www.eavsrl.it/category/infomobilita-ferrovia/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_rail
+- source_id: eav_bus
+  name: EAV - Infomobilita Autolinee
+  url: https://www.eavsrl.it/category/infomobilita-autolinee/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_bus
+- source_id: eav_access
+  name: EAV - Infomobilita Accessibilita
+  url: https://www.eavsrl.it/category/infomobilita-accessibilita/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_access
+- source_id: eav_strike
+  name: EAV - Sciopero
+  url: https://www.eavsrl.it/category/sciopero/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_strike
+- source_id: rfi_camp_updates
+  name: RFI - Infomobilita Campania aggiornamenti
+  url: https://www.rfi.it/content/rfi/it/news-e-media/infomobilita.rss.updates.campania.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: not_required
+  polling_interval_s: 600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_camp_updates
+- source_id: rfi_camp_notices
+  name: RFI - Infomobilita Campania avvisi programmati
+  url: https://www.rfi.it/content/rfi/it/news-e-media/infomobilita.rss.notices.campania.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: not_required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_camp_notices
+- source_id: rfi_camp_press
+  name: RFI - Comunicati stampa Campania
+  url: https://www.rfi.it/content/rfi/it/news-e-media/comunicati-stampa-e-news.rss.type.comunicato_stampa.areas.campania.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: not_required
+  polling_interval_s: 43200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_camp_press
+- source_id: rfi_nat_updates
+  name: RFI - Infomobilita nazionale aggiornamenti
+  url: https://www.rfi.it/content/rfi/it/news-e-media/infomobilita.rss.updates.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_nat_updates
+- source_id: pc_campania
+  name: Protezione Civile Campania - Feed principale
+  url: https://portaleprotezionecivile.regione.campania.it/?feed=rss2
+  kind: rss
+  source_class: civil_protection
+  operator: pc_campania
+  local_relevance: not_required
+  polling_interval_s: 1200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pc_campania
+- source_id: comune_notizie
+  name: Comune di Napoli - Notizie
+  url: https://www.comune.napoli.it/tipi_notizia/notizia/feed/
+  kind: rss
+  source_class: local_government
+  operator: comune_napoli
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - comune_notizie
+- source_id: eav_general
+  name: EAV - Feed generale
+  url: https://www.eavsrl.it/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_general
+- source_id: eav_plants
+  name: EAV - Variazioni impianti
+  url: https://www.eavsrl.it/category/variazioni-infomobilita-impianti/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_plants
+- source_id: eav_news
+  name: EAV - News
+  url: https://www.eavsrl.it/category/news-home-page/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 7200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_news
+- source_id: eav_press
+  name: EAV - Comunicati stampa
+  url: https://www.eavsrl.it/category/comunicati-stampa/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 43200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_press
+- source_id: eav_svr
+  name: EAV - Infomobilita SVR
+  url: https://www.eavsrl.it/category/infomobilita-svr/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_svr
+- source_id: eav_flegree
+  name: EAV - Linee Flegree
+  url: https://www.eavsrl.it/category/linee-flegree/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_flegree
+- source_id: eav_suburbane
+  name: EAV - Linee Suburbane
+  url: https://www.eavsrl.it/category/linee-suburbane/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_suburbane
+- source_id: eav_vesuviane
+  name: EAV - Linee Vesuviane
+  url: https://www.eavsrl.it/category/linee-vesuviane/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_vesuviane
+- source_id: eav_metro
+  name: EAV - Metro Piscinola-Aversa
+  url: https://www.eavsrl.it/category/linea-metropolitana-piscinola-aversa/feed/
+  kind: rss
+  source_class: official_transport
+  operator: eav
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - eav_metro
+- source_id: rfi_camp_news
+  name: RFI - News Campania
+  url: https://www.rfi.it/content/rfi/it/news-e-media/comunicati-stampa-e-news.rss.type.news.areas.campania.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_camp_news
+- source_id: rfi_nat_notices
+  name: RFI - Infomobilita nazionale avvisi programmati
+  url: https://www.rfi.it/content/rfi/it/news-e-media/infomobilita.rss.notices.xml
+  kind: rss
+  source_class: official_transport
+  operator: rfi
+  local_relevance: required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - rfi_nat_notices
+- source_id: comune_comunicati
+  name: Comune di Napoli - Comunicati stampa
+  url: https://www.comune.napoli.it/tipi_notizia/comunicato-stampa/feed/
+  kind: rss
+  source_class: local_government
+  operator: comune_napoli
+  local_relevance: not_required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - comune_comunicati
+- source_id: comune_avvisi
+  name: Comune di Napoli - Avvisi
+  url: https://www.comune.napoli.it/tipi_notizia/avviso/feed/
+  kind: rss
+  source_class: local_government
+  operator: comune_napoli
+  local_relevance: not_required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - comune_avvisi
+- source_id: comune_general
+  name: Comune di Napoli - Feed generale
+  url: https://www.comune.napoli.it/feed/
+  kind: rss
+  source_class: local_government
+  operator: comune_napoli
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - comune_general
+- source_id: cm_news
+  name: Citta Metropolitana di Napoli - News
+  url: https://www.cittametropolitana.na.it/news/-/journal/rss/184480?doAsGroupId=10181&refererPlid=13615&controlPanelCategory=current_site.content&_15_groupId=10181
+  kind: rss
+  source_class: local_government
+  operator: citta_metropolitana
+  local_relevance: not_required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - cm_news
+- source_id: cm_press
+  name: Citta Metropolitana di Napoli - Agenzia stampa
+  url: https://www.cittametropolitana.na.it/agenzia-stampa/-/journal/rss/184482?doAsGroupId=10181&refererPlid=13615&controlPanelCategory=current_site.content&_15_groupId=10181
+  kind: rss
+  source_class: local_government
+  operator: citta_metropolitana
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - cm_press
+- source_id: adsp_general
+  name: AdSP Mar Tirreno Centrale - Feed generale
+  url: https://adsptirrenocentrale.it/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_general
+- source_id: adsp_news
+  name: AdSP Mar Tirreno Centrale - News
+  url: https://adsptirrenocentrale.it/category/news/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_news
+- source_id: adsp_press
+  name: AdSP Mar Tirreno Centrale - Comunicati stampa
+  url: https://adsptirrenocentrale.it/category/comunicati-stampa/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_press
+- source_id: adsp_ordinanze
+  name: AdSP Mar Tirreno Centrale - Ordinanze
+  url: https://adsptirrenocentrale.it/category/ordinanze/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_ordinanze
+- source_id: aci_comunicati
+  name: ACI - Comunicati stampa
+  url: https://aci.gov.it/comunicati-stampa/feed/
+  kind: rss
+  source_class: national_context
+  operator: aci
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - aci_comunicati
+- source_id: aci_notizie
+  name: ACI - Notizie
+  url: https://aci.gov.it/notizie/feed/
+  kind: rss
+  source_class: national_context
+  operator: aci
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - aci_notizie
+- source_id: aci_napoli
+  name: ACI Napoli - Notizie ed eventi
+  url: https://napoli.aci.it/footer/per-la-navigazione/feed-rss/notizie-ed-eventi.html?type=98188
+  kind: rss
+  source_class: national_context
+  operator: aci
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - aci_napoli
+- source_id: regione_campania
+  name: Regione Campania - Feed generale
+  url: https://www.regione.campania.it/feed/
+  kind: rss
+  source_class: local_government
+  operator: regione_campania
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - regione_campania
+- source_id: cciss
+  name: CCISS - Notiziario traffico
+  url: https://www.cciss.it/rss
+  kind: rss
+  source_class: official_transport
+  operator: cciss
+  local_relevance: required
+  polling_interval_s: 300
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - cciss
+- source_id: mit_scioperi
+  name: MIT - Scioperi in programma
+  url: https://scioperi.mit.gov.it/mit2/public/scioperi/rss
+  kind: rss
+  source_class: official_transport
+  operator: mit
+  local_relevance: required
+  polling_interval_s: 10800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - mit_scioperi
+- source_id: pc_campania_avvisi
+  name: Protezione Civile Campania - Avvisi
+  url: https://portaleprotezionecivile.regione.campania.it/?cat=132&feed=rss2
+  kind: rss
+  source_class: civil_protection
+  operator: pc_campania
+  local_relevance: not_required
+  polling_interval_s: 1200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pc_campania_avvisi
+- source_id: ingv_terremoti
+  name: INGV - Terremoti ultima settimana
+  url: https://terremoti.ingv.it/feed/atom/all_week
+  kind: atom
+  source_class: national_context
+  operator: ingv
+  local_relevance: required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - ingv_terremoti
+- source_id: spn_a3
+  name: SPN - Salerno Pompei Napoli A3
+  url: https://salernopompeinapolispa.it/feed/
+  kind: rss
+  source_class: official_transport
+  operator: spn
+  local_relevance: not_required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - spn_a3
+- source_id: ansa_campania
+  name: ANSA - Campania
+  url: https://www.ansa.it/campania/notizie/campania_rss.xml
+  kind: rss
+  source_class: local_news
+  operator: ansa
+  local_relevance: required
+  polling_interval_s: 600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - ansa_campania
+- source_id: napolitoday
+  name: NapoliToday - Feed principale
+  url: https://www.napolitoday.it/rss
+  kind: rss
+  source_class: local_news
+  operator: napolitoday
+  local_relevance: required
+  polling_interval_s: 600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - napolitoday
+- source_id: mostra_oltremare
+  name: Mostra d'Oltremare - News
+  url: https://www.mostradoltremare.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: mostra_oltremare
+  local_relevance: required
+  polling_interval_s: 43200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - mostra_oltremare
+- source_id: napoli_da_vivere
+  name: Napoli da Vivere - Feed principale
+  url: https://www.napolidavivere.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: napoli_da_vivere
+  local_relevance: required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - napoli_da_vivere
+- source_id: google_news_viabilita_7d
+  name: Google News - Napoli viabilita 7 giorni
+  url: https://news.google.com/rss/search?q=Napoli%20viabilit%C3%A0%20when%3A7d&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 1800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_viabilita_7d
+- source_id: google_news_aeroporto_7d
+  name: Google News - Aeroporto Napoli 7 giorni
+  url: https://news.google.com/rss/search?q=aeroporto%20Napoli%20when%3A7d&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 1800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_aeroporto_7d
+- source_id: google_news_crociere_30d
+  name: Google News - Napoli crociere 30 giorni
+  url: https://news.google.com/rss/search?q=Napoli%20crociere%20when%3A30d&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_crociere_30d
+- source_id: ilmattino_napoli
+  name: Il Mattino - Napoli
+  url: https://www.ilmattino.it/rss/napoli.xml
+  kind: rss
+  source_class: local_news
+  operator: ilmattino
+  local_relevance: required
+  polling_interval_s: 600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - ilmattino_napoli
+- source_id: pozzuoli_news24
+  name: Pozzuoli News 24
+  url: https://www.pozzuolinews24.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: pozzuoli_news24
+  local_relevance: required
+  polling_interval_s: 1200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pozzuoli_news24
+- source_id: capodimonte
+  name: Museo e Real Bosco di Capodimonte - News
+  url: https://capodimonte.cultura.gov.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: capodimonte
+  local_relevance: required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - capodimonte
+- source_id: ercolano
+  name: Parco Archeologico di Ercolano - News
+  url: https://ercolano.cultura.gov.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: ercolano
+  local_relevance: required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - ercolano
+- source_id: citta_scienza
+  name: Citta della Scienza - News
+  url: https://www.cittadellascienza.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: citta_scienza
+  local_relevance: required
+  polling_interval_s: 21600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - citta_scienza
+- source_id: parco_vesuvio
+  name: Parco Nazionale del Vesuvio - News
+  url: https://www.parconazionaledelvesuvio.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: parco_vesuvio
+  local_relevance: required
+  polling_interval_s: 43200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - parco_vesuvio
+- source_id: reggia_caserta
+  name: Reggia di Caserta - News
+  url: https://reggiadicaserta.cultura.gov.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: reggia_caserta
+  local_relevance: required
+  polling_interval_s: 43200
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - reggia_caserta
+- source_id: pc_campania_bollettino
+  name: Protezione Civile Campania - Bollettino meteo
+  url: https://portaleprotezionecivile.regione.campania.it/?cat=182&feed=rss2
+  kind: rss
+  source_class: civil_protection
+  operator: pc_campania
+  local_relevance: not_required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pc_campania_bollettino
+- source_id: pc_nazionale_criticita
+  name: Protezione Civile Nazionale - Bollettino criticita
+  url: https://api.protezionecivile.it/default/dpcPortalGenerateRss?categoria=bollettino_criticita
+  kind: rss
+  source_class: national_context
+  operator: pc_nazionale
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pc_nazionale_criticita
+- source_id: pc_nazionale_vigilanza
+  name: Protezione Civile Nazionale - Bollettino vigilanza
+  url: https://api.protezionecivile.it/default/dpcPortalGenerateRss?categoria=bollettino_vigilanza
+  kind: rss
+  source_class: national_context
+  operator: pc_nazionale
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pc_nazionale_vigilanza
+- source_id: vesuviolive
+  name: Vesuvio Live - Feed principale
+  url: https://www.vesuviolive.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: vesuviolive
+  local_relevance: required
+  polling_interval_s: 900
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - vesuviolive
+- source_id: gazzetta_napoli
+  name: Gazzetta di Napoli - Feed principale
+  url: https://www.gazzettadinapoli.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: gazzetta_napoli
+  local_relevance: required
+  polling_interval_s: 1800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - gazzetta_napoli
+- source_id: napolitan
+  name: Napolitan - Feed principale
+  url: https://www.napolitan.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: napolitan
+  local_relevance: required
+  polling_interval_s: 1800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - napolitan
+- source_id: google_news_eventi_7d
+  name: Google News - Napoli eventi 7 giorni
+  url: https://news.google.com/rss/search?q=Napoli%20eventi%20when%3A7d&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_eventi_7d
+- source_id: google_news_allerta_meteo
+  name: Google News - Napoli allerta meteo
+  url: https://news.google.com/rss/search?q=Napoli+allerta+meteo&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 1800
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_allerta_meteo
+- source_id: vigilfuoco
+  name: Vigili del Fuoco - Notizie
+  url: https://www.vigilfuoco.it/news/rss.xml
+  kind: rss
+  source_class: national_context
+  operator: vigilfuoco
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - vigilfuoco
+- source_id: teatro_san_carlo
+  name: Teatro di San Carlo - News
+  url: https://www.teatrosancarlo.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: teatro_san_carlo
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - teatro_san_carlo
+- source_id: radio_traffic
+  name: Radio Traffic - Feed principale
+  url: https://www.radiotraffic.it/feed/
+  kind: rss
+  source_class: national_context
+  operator: radio_traffic
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - radio_traffic
+- source_id: enac
+  name: ENAC - News
+  url: https://www.enac.gov.it/feed/
+  kind: rss
+  source_class: national_context
+  operator: enac
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - enac
+- source_id: internapoli
+  name: Internapoli - Feed principale
+  url: https://www.internapoli.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: internapoli
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - internapoli
+- source_id: cronaca_flegrea
+  name: Cronaca Flegrea - Feed principale
+  url: https://www.cronacaflegrea.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: cronaca_flegrea
+  local_relevance: required
+  polling_interval_s: 3600
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - cronaca_flegrea
+- source_id: abc_napoli
+  name: ABC Napoli - RSS Joomla
+  url: https://www.abc.napoli.it/index.php?format=feed&type=rss
+  kind: rss
+  source_class: local_government
+  operator: abc_napoli
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - abc_napoli
+- source_id: adsp_napoli
+  name: AdSP - Napoli
+  url: https://adsptirrenocentrale.it/category/napoli/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_napoli
+- source_id: adsp_napoli_newsletter
+  name: AdSP - Napoli newsletter
+  url: https://adsptirrenocentrale.it/category/napoli-newsletter/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_napoli_newsletter
+- source_id: adsp_eventi
+  name: AdSP - Eventi
+  url: https://adsptirrenocentrale.it/category/eventi/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_eventi
+- source_id: adsp_lavori
+  name: AdSP - Lavori in corso
+  url: https://adsptirrenocentrale.it/category/lavori-in-corso/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_lavori
+- source_id: adsp_crociere_en
+  name: AdSP - Cruise traffic EN
+  url: https://adsptirrenocentrale.it/category/traffico-crocieristico-en/feed/
+  kind: rss
+  source_class: local_government
+  operator: adsp
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - adsp_crociere_en
+- source_id: calcionapoli24
+  name: CalcioNapoli24 - Feed principale
+  url: https://www.calcionapoli24.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: calcionapoli24
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - calcionapoli24
+- source_id: tuttonapoli
+  name: Tuttonapoli - Feed principale
+  url: https://www.tuttonapoli.net/rss
+  kind: rss
+  source_class: local_news
+  operator: tuttonapoli
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - tuttonapoli
+- source_id: metropolisweb
+  name: Metropolisweb - Feed principale
+  url: https://www.metropolisweb.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: metropolisweb
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - metropolisweb
+- source_id: cronache_campania
+  name: Cronache della Campania - Feed principale
+  url: https://www.cronachedellacampania.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: cronache_campania
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - cronache_campania
+- source_id: napolimilionaria
+  name: Napoli Milionaria - Feed principale
+  url: https://www.napolimilionaria.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: napolimilionaria
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - napolimilionaria
+- source_id: grande_napoli
+  name: Grande Napoli - Feed principale
+  url: https://www.grandenapoli.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: grande_napoli
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - grande_napoli
+- source_id: madre
+  name: MADRE - Feed principale
+  url: https://www.madrenapoli.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: madre
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - madre
+- source_id: campaniartecard
+  name: Campania Artecard - Feed principale
+  url: https://www.campaniartecard.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: campaniartecard
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - campaniartecard
+- source_id: pompeiisites
+  name: Pompei - Parco Archeologico
+  url: https://pompeiisites.org/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: pompei
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - pompeiisites
+- source_id: mann
+  name: MANN - Museo Archeologico
+  url: https://mann-napoli.it/feed/
+  kind: rss
+  source_class: tourism_culture
+  operator: mann
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - mann
+- source_id: corriere_mezzogiorno
+  name: Corriere del Mezzogiorno - Napoli
+  url: https://napoli.corriere.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: corriere_mezzogiorno
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - corriere_mezzogiorno
+- source_id: fanpage_napoli
+  name: Fanpage Napoli - Feed
+  url: https://www.fanpage.it/napoli/feed/
+  kind: rss
+  source_class: local_news
+  operator: fanpage
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - fanpage_napoli
+- source_id: napolitoday_feed
+  name: NapoliToday - percorso /feed/ (errato)
+  url: https://www.napolitoday.it/feed/
+  kind: rss
+  source_class: local_news
+  operator: napolitoday
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - napolitoday_feed
+- source_id: google_news_viabilita
+  name: Google News - Napoli viabilita (query superata)
+  url: https://news.google.com/rss/search?q=Napoli+viabilit%C3%A0+traffico&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_viabilita
+- source_id: google_news_crociere
+  name: Google News - Napoli crociere (query superata)
+  url: https://news.google.com/rss/search?q=Napoli+crociere&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_crociere
+- source_id: google_news_aeroporto
+  name: Google News - Aeroporto Napoli (query superata)
+  url: https://news.google.com/rss/search?q=aeroporto+Napoli&hl=it&gl=IT&ceid=IT:it
+  kind: google_news
+  source_class: aggregator
+  operator: google_news
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: ''
+  provenance:
+  - google_news_aeroporto
+- source_id: anm_news
+  name: ANM - Notizie (scraper Aura/Apex del team)
+  url: https://www.anm.it/s/notizia-home/Notizia_Home__c/Default?language=it
+  kind: anm_scraper
+  source_class: official_transport
+  operator: anm
+  local_relevance: not_required
+  polling_interval_s: 600
+  timeout_s: 25
+  max_retries: 3
+  enabled: true
+  language: it
+  notes: Usa anm_scraper.py del team; nessun RSS ANM inventato.
+  provenance:
+  - anm_news
+- source_id: anm_feed
+  name: ANM - Tentativo /feed/ (non RSS)
+  url: https://www.anm.it/feed/
+  kind: non_rss
+  source_class: unsupported
+  operator: anm
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: HTTP 200 HTML di login; nessun RSS. Usare anm_news.
+  provenance:
+  - anm_feed
+- source_id: anm_rss2
+  name: ANM - Tentativo ?feed=rss2 (non RSS)
+  url: https://www.anm.it/?feed=rss2
+  kind: non_rss
+  source_class: unsupported
+  operator: anm
+  local_relevance: not_required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: HTTP 200 HTML; nessun RSS. Usare anm_news.
+  provenance:
+  - anm_rss2
+- source_id: trenitalia_feed
+  name: Trenitalia - Tentativo /feed/ (non RSS)
+  url: https://www.trenitalia.com/feed/
+  kind: non_rss
+  source_class: unsupported
+  operator: trenitalia
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: HTTP 404; nessun RSS pubblico verificato.
+  provenance:
+  - trenitalia_feed
+- source_id: gesac_feed
+  name: GESAC Aeroporto Napoli - Tentativo /it/feed/ (non RSS)
+  url: https://www.aeroportodinapoli.it/it/feed/
+  kind: non_rss
+  source_class: unsupported
+  operator: gesac
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: Challenge Radware; nessun RSS.
+  provenance:
+  - gesac_feed
+- source_id: luceverde_feed
+  name: Luceverde Napoli - Tentativo /feed/ (non RSS)
+  url: https://napoli.luceverde.it/feed/
+  kind: non_rss
+  source_class: unsupported
+  operator: luceverde
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: HTTP 404; nessun RSS.
+  provenance:
+  - luceverde_feed
+- source_id: repubblica_napoli
+  name: Repubblica Napoli - homepage (non RSS)
+  url: https://napoli.repubblica.it/
+  kind: non_rss
+  source_class: unsupported
+  operator: repubblica
+  local_relevance: required
+  polling_interval_s: 86400
+  timeout_s: 20
+  max_retries: 0
+  enabled: false
+  language: it
+  notes: Solo homepage nazionale; nessun feed locale dedicato.
+  provenance:
+  - repubblica_napoli

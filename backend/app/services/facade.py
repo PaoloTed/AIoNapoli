@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +14,12 @@ from shared.schemas.api import (
     FindingResponse,
     ScenarioResponse,
     VehiclePosition,
+)
+from shared.schemas.journeys import (
+    JourneyPlanRequest,
+    JourneyPlanResponse,
+    JourneyPromptRequest,
+    JourneyPromptResponse,
 )
 
 from app.db.migrations import apply_migrations
@@ -25,6 +33,10 @@ from app.repositories.disruptions import DisruptionRepository
 from app.repositories.memory import InMemorySourceRepository
 from app.repositories.postgres import PostgresSourceRepository
 from app.repositories.territory import OSMTerritoryRepository
+from app.services.ingestion.repository import IngestionRepository
+from app.services.input.agent import InputAgent
+from app.services.input.geocoder import PlaceResolver
+from app.services.journeys import JourneyPlanner
 from app.services.orchestrator.config import load_config
 from app.services.orchestrator.pipeline import run_pipeline
 from app.services.validation.finding_validator import (
@@ -82,11 +94,15 @@ class BackendService:
         repository: SourceRepository | None = None,
         audit_store: AuditStore | None = None,
         clock: Clock | None = None,
+        journey_planner: JourneyPlanner | None = None,
     ) -> None:
         self.config = config or load_config()
         self.clock = clock or SystemClock()
+        self._db_lock = threading.RLock()
         self.territory_repository: OSMTerritoryRepository | None = None
         self.disruption_repository: DisruptionRepository | None = None
+        self.place_resolver: PlaceResolver | None = None
+        self.input_agent: InputAgent | None = None
         if repository is not None and audit_store is not None:
             self.repository: SourceRepository = repository
             self.audit_store: AuditStore = audit_store
@@ -108,6 +124,15 @@ class BackendService:
                     gtfs_dataset_key=self.config.gtfs_dataset_key,
                     osm_dataset_key=self.config.osm_dataset_key,
                 )
+        self.journey_planner = journey_planner or JourneyPlanner(
+            self.config,
+            disruption_repository=self.disruption_repository,
+            territory_repository=self.territory_repository,
+            source_repository=self.repository,
+        )
+        if self._db_conn is not None and self.config.app_profile == "postgres":
+            self.place_resolver = PlaceResolver(self._db_conn, self.config)
+            self.input_agent = InputAgent(self.config, self.place_resolver, self.journey_planner)
         self._scenarios = _load_scenario_fixtures()
 
     def close(self) -> None:
@@ -135,6 +160,101 @@ class BackendService:
             finding=finding,
             finding_ref=finding_ref,
         )
+
+    def plan_journey(self, request: JourneyPlanRequest) -> JourneyPlanResponse:
+        """Plan one coordinate-based journey through the configured OTP graph."""
+        with self._db_lock:
+            return self.journey_planner.plan(request)
+
+    def plan_journey_prompt(self, request: JourneyPromptRequest) -> JourneyPromptResponse:
+        """Interpret a natural prompt and run the same orchestration."""
+        if self.input_agent is None:
+            raise ValidationProblem(
+                status=503,
+                code="input_agent_unavailable",
+                title="Agente Input non disponibile",
+                detail="il profilo postgres con catalogo GTFS/OSM e' richiesto",
+            )
+        with self._db_lock:
+            return self.input_agent.interpret(request)
+
+    def list_disruptions(
+        self,
+        *,
+        include_simulated: bool = False,
+        window_hours: int = 168,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        if self.disruption_repository is None:
+            raise ValidationProblem(
+                status=503,
+                code="disruptions_unavailable",
+                title="Perturbazioni non disponibili",
+                detail="il profilo postgres e' richiesto",
+            )
+        now = datetime.now(timezone.utc)
+        with self._db_lock:
+            records = self.disruption_repository.list_relevant(
+                now - timedelta(hours=1),
+                now + timedelta(hours=max(1, window_hours)),
+                include_simulated=include_simulated,
+            )
+        return [record.model_dump(mode="json") for record in records[: max(1, limit)]]
+
+    def get_disruption(self, source_id: str, alert_id: str) -> dict[str, Any]:
+        if self.disruption_repository is None:
+            raise ValidationProblem(
+                status=503,
+                code="disruptions_unavailable",
+                title="Perturbazioni non disponibili",
+                detail="il profilo postgres e' richiesto",
+            )
+        with self._db_lock:
+            record = self.disruption_repository.get(source_id, alert_id)
+        if record is None:
+            raise ValidationProblem(
+                status=404,
+                code="disruption_not_found",
+                title="Perturbazione non trovata",
+                detail=f"{source_id}/{alert_id}",
+            )
+        return record.model_dump(mode="json")
+
+    def _ingestion_repo(self) -> IngestionRepository:
+        if self._db_conn is None:
+            raise ValidationProblem(
+                status=503,
+                code="ingestion_unavailable",
+                title="Acquisizione non disponibile",
+                detail="il profilo postgres e' richiesto",
+            )
+        return IngestionRepository(self._db_conn)
+
+    def ingestion_sources(self) -> list[dict[str, Any]]:
+        with self._db_lock:
+            return self._ingestion_repo().list_sources()
+
+    def ingestion_documents(
+        self,
+        *,
+        status: str | None = None,
+        source_id: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        with self._db_lock:
+            return self._ingestion_repo().list_documents(
+                status=status, source_id=source_id, limit=limit
+            )
+
+    def ingestion_status(self) -> dict[str, Any]:
+        with self._db_lock:
+            return self._ingestion_repo().status_summary()
+
+    def ingestion_fetches(
+        self, *, source_id: str | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        with self._db_lock:
+            return self._ingestion_repo().fetches(source_id=source_id, limit=limit)
 
     def get_scenario_data(self, scenario_id: str) -> ScenarioResponse:
         raw = self._scenarios.get(scenario_id)

@@ -17,8 +17,15 @@ import { ChatInput } from "./ChatInput";
 import { QuickActions } from "./QuickActions";
 import { retrieve } from "./retrieval";
 import { buildDemoMessages } from "./demoScripts";
+import { isMockMode } from "@/lib/api/mockMode";
+import { LiveJourneyChat } from "./LiveJourneyChat";
 
 export function ChatPanel({ target, onClose }: { target: Target; onClose?: () => void }) {
+  const props = onClose ? { target, onClose } : { target };
+  return isMockMode() ? <DemoChatPanel {...props} /> : <LiveJourneyChat {...props} />;
+}
+
+function DemoChatPanel({ target, onClose }: { target: Target; onClose?: () => void }) {
   const { decision, lang, demoRequest } = useAppStore();
   const [messages, setMessages] = useState<RecipientChatMessage[]>([]);
   const counter = useRef(0);

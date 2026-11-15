@@ -8,5 +8,7 @@ Type=oneshot
 WorkingDirectory=/home/r0x4n/hackaton2026CDS
 Environment=OTP_UNIT=otp-mobility.service
 ExecStart=/home/r0x4n/hackaton2026CDS/infra/otp/sync_graph_from_request.sh --request /home/r0x4n/hackaton2026CDS/data/otp-rebuild/request.json
+# Fail the unit if PostgreSQL, the active build and the live graph diverge.
+ExecStartPost=/usr/bin/env python3 /home/r0x4n/hackaton2026CDS/infra/otp/check_pipeline_consistency.py
 Nice=10
 TimeoutStartSec=1800

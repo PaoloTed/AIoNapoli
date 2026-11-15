@@ -151,7 +151,9 @@ def test_two_feed_syncs_and_disruptions_stay_separate(isolated):
         (LinkEntityType.STOP, "same:stop"),
     ):
         for dataset in ("eav", "anm"):
-            found = repo.find_applicable(kind, identifier, at, dataset_key=dataset)
+            found = repo.find_applicable(
+                kind, identifier, at, dataset_key=dataset, include_simulated=True
+            )
             assert [alert.alert_id for alert in found] == [dataset]
     eav_before = repo.get("fixture_namespace", "eav")
     assert eav_before is not None

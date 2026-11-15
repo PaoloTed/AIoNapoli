@@ -246,6 +246,7 @@ class DisruptionLinkRecord(BaseModel):
     link_ref: str
     entity_type: LinkEntityType
     entity_key: str | None = None
+    entity_id: str | None = None
     raw_reference: str
     resolution_status: ResolutionStatus
     resolution_note: str | None = None
@@ -295,7 +296,8 @@ class DisruptionRecord(BaseModel):
     updated_at: datetime | None = None
     links: list[DisruptionLinkRecord] = Field(default_factory=list)
 
-    def is_applicable_at(self, at: datetime, service_date: date | None = None) -> bool:
+    def is_temporally_applicable(self, at: datetime) -> bool:
+        """Lifecycle/publication/validity/recurrence check, without link scope."""
         ref = _aware(at, "at")
         if self.lifecycle_status is not LifecycleStatus.ACTIVE:
             return False
@@ -309,6 +311,12 @@ class DisruptionRecord(BaseModel):
             local = ref.astimezone(ZoneInfo(self.timezone))
             if not self.recurrence.applies(local):
                 return False
+        return True
+
+    def is_applicable_at(self, at: datetime, service_date: date | None = None) -> bool:
+        ref = _aware(at, "at")
+        if not self.is_temporally_applicable(ref):
+            return False
         current_links = [
             link
             for link in self.links
@@ -317,8 +325,7 @@ class DisruptionRecord(BaseModel):
         if not current_links:
             return False
         if service_date is not None and not any(
-            link.service_date is None or link.service_date == service_date
-            for link in current_links
+            link.service_date is None or link.service_date == service_date for link in current_links
         ):
             return False
         return True

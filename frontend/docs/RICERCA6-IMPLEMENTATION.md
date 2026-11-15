@@ -60,8 +60,8 @@ Nessun layer tecnico sulla superficie recipient: niente flotta, densità o reaso
 ## 4. Demo consigliata (90 secondi)
 
 1. `/` — vista Cittadino: messaggio contestuale, card e mappa.
-2. Switch su **Turista**: palette corallo e suggerimenti dedicati.
-3. Apri la chat e chiedi *"Come arrivo in ufficio?"*: appare una `PlanCard` con tempo stimato.
+2. Pannello **Demo guidata**: premi *Cittadino · casa-ufficio* e osserva la conversazione simulata (nessuna chiamata al backend).
+3. Chiudi la chat, premi *Turista · visita senza folla*: il target cambia e parte il secondo copione con la `PlanCard` profilata.
 4. `/operator/situation` — click sul marker Bagnoli: popover con evidenze e confidenza.
 5. `/operator/decision` — piano per target e reasoning timeline; attiva "Solo step decisivi".
 6. `/operator/discard` — `Avvia scenario`: proposta L2 → scarto per cantiere ANM → proposta R2 → accordo.
@@ -74,7 +74,7 @@ Nessun layer tecnico sulla superficie recipient: niente flotta, densità o reaso
 Screenshot prodotti in `frontend/.design-refs/results/`:
 
 - `operator-shell.png`, `operator-situation.png`, `operator-decision.png`, `operator-discard.png`, `operator-audit.png`, `operator-chat.png`
-- `recipient-shell.png`, `recipient-overview.png`, `recipient-chat.png`, `recipient-tourist.png`
+- `recipient-shell.png`, `recipient-overview.png`, `recipient-chat.png`, `recipient-tourist.png`, `recipient-demo-citizen.png`, `recipient-demo-tourist.png`
 
 Riferimenti esterni e analisi: `frontend/.design-refs/analysis.md`. Gli screenshot dei riferimenti non sono versionati (vedi `.gitignore`).
 

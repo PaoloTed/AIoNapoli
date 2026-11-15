@@ -37,8 +37,8 @@ const SCRIPTS: Record<"citizen" | "tourist", DemoStep[]> = {
     },
     {
       role: "assistant",
-      it: "Circa 15 minuti: navetta R2 fino a Mergellina e poi bus 151. Ho escluso la Linea 2 perché risulta bloccata.",
-      en: "About 15 minutes: R2 shuttle to Mergellina, then bus 151. I ruled out Line 2 because it is currently blocked.",
+      it: "Circa 15 minuti: segui il percorso nella scheda qui sopra. Ho escluso la Linea 2 perché risulta bloccata.",
+      en: "About 15 minutes: follow the route in the card above. I ruled out Line 2 because it is currently blocked.",
     },
     {
       role: "user",
@@ -59,8 +59,8 @@ const SCRIPTS: Record<"citizen" | "tourist", DemoStep[]> = {
     },
     {
       role: "assistant",
-      it: "Bagnoli è molto affollata fino alle 20:00. Ti consiglio Mergellina e il lungomare, lontano dalla folla:",
-      en: "Bagnoli is very crowded until 8 pm. I recommend Mergellina and the seafront, away from the crowds:",
+      it: "Bagnoli è molto affollata fino alle 20:00. Ti propongo l'alternativa più tranquilla, lontano dalla folla:",
+      en: "Bagnoli is very crowded until 8 pm. Here is the calmest alternative, away from the crowds:",
       planCount: 1,
     },
     {
@@ -70,8 +70,8 @@ const SCRIPTS: Record<"citizen" | "tourist", DemoStep[]> = {
     },
     {
       role: "assistant",
-      it: "Con la navetta R2 fino a Mergellina, poi una passeggiata sul lungomare. Evita la Linea 2: è sospesa.",
-      en: "Take the R2 shuttle to Mergellina, then walk along the seafront. Avoid Line 2: it is suspended.",
+      it: "Segui il percorso nella scheda: ho scelto l'opzione che evita la zona più affollata. Evita la Linea 2: è sospesa.",
+      en: "Follow the route in the card: I picked the option that avoids the busiest area. Avoid Line 2: it is suspended.",
     },
     {
       role: "user",

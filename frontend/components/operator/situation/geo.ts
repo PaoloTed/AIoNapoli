@@ -1,5 +1,5 @@
 /**
- * @purpose Proiezione geografica e aggregazioni di zona per la mappa operativa
+ * @purpose Aggregazioni geografiche delle zone operative per la mappa reale
  * @contracts Finding, VehiclePosition
  * @tokens operator
  * @verified 2026-11-15
@@ -7,6 +7,7 @@
 
 import { NAPLES_ZONES } from "@/lib/scenarios";
 import type { Finding, Severity, VehiclePosition } from "@/lib/types/contracts";
+import type { LatLng } from "@/components/map/SlippyMap";
 
 export const NAPLES_BBOX = {
   minLon: 14.1,
@@ -15,30 +16,19 @@ export const NAPLES_BBOX = {
   maxLat: 40.95,
 } as const;
 
-export const MAP_WIDTH = 1000;
-export const MAP_HEIGHT = 700;
+export const NAPLES_CENTER: LatLng = { lat: 40.84, lng: 14.2 };
 
-export function project([lon, lat]: [number, number]): [number, number] {
-  const x = ((lon - NAPLES_BBOX.minLon) / (NAPLES_BBOX.maxLon - NAPLES_BBOX.minLon)) * MAP_WIDTH;
-  const y =
-    MAP_HEIGHT - ((lat - NAPLES_BBOX.minLat) / (NAPLES_BBOX.maxLat - NAPLES_BBOX.minLat)) * MAP_HEIGHT;
-  return [x, y];
-}
-
-export function projectPoint(latitude: number, longitude: number): [number, number] {
-  return project([longitude, latitude]);
-}
-
-export function zonePolygonPoints(zoneId: string): string | null {
+export function zoneCenterLatLng(zoneId: string): LatLng | null {
   const zone = NAPLES_ZONES[zoneId];
   if (!zone) return null;
-  return zone.polygon.map((point) => project(point).join(",")).join(" ");
+  const [lng, lat] = zone.center;
+  return { lat, lng };
 }
 
-export function zoneCenter(zoneId: string): [number, number] | null {
+export function zoneRingLatLng(zoneId: string): LatLng[] {
   const zone = NAPLES_ZONES[zoneId];
-  if (!zone) return null;
-  return project(zone.center);
+  if (!zone) return [];
+  return zone.polygon.map(([lng, lat]) => ({ lat, lng }));
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { low: 1, medium: 2, high: 3, critical: 4 };
@@ -48,7 +38,7 @@ export type ZoneAggregate = {
   findings: Finding[];
   maxSeverity: Severity;
   density: number;
-  center: [number, number];
+  center: LatLng;
 };
 
 export function aggregateByZone(findings: Finding[]): ZoneAggregate[] {
@@ -63,7 +53,7 @@ export function aggregateByZone(findings: Finding[]): ZoneAggregate[] {
 
   const aggregates: ZoneAggregate[] = [];
   for (const [zoneId, list] of map) {
-    const center = zoneCenter(zoneId);
+    const center = zoneCenterLatLng(zoneId);
     if (!center) continue;
     let maxSeverity: Severity = "low";
     let density = 0;

@@ -1,5 +1,5 @@
 /**
- * @purpose Mappa recipient semplificata senza layer tecnici
+ * @purpose Mappa recipient reale e semplificata, senza layer tecnici
  * @contracts Finding
  * @tokens recipient
  * @verified 2026-11-15
@@ -10,18 +10,11 @@
 import { useMemo, useState } from "react";
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import { NAPLES_ZONES } from "@/lib/scenarios";
+import { SlippyMap } from "@/components/map/SlippyMap";
 import type { Finding, Severity } from "@/lib/types/contracts";
 
-const WIDTH = 700;
-const HEIGHT = 380;
-const BBOX = { minLon: 14.1, maxLon: 14.4, minLat: 40.75, maxLat: 40.95 };
-
-function project(lon: number, lat: number): [number, number] {
-  return [
-    ((lon - BBOX.minLon) / (BBOX.maxLon - BBOX.minLon)) * WIDTH,
-    HEIGHT - ((lat - BBOX.minLat) / (BBOX.maxLat - BBOX.minLat)) * HEIGHT,
-  ];
-}
+const MAP_CENTER = { lat: 40.84, lng: 14.2 };
+const MAP_BOUNDS = { minLon: 14.1, maxLon: 14.4, minLat: 40.75, maxLat: 40.95 };
 
 const SHORT_LABEL: Record<string, string> = {
   Z_BAGNOLI: "Bagnoli",
@@ -30,14 +23,6 @@ const SHORT_LABEL: Record<string, string> = {
   Z_MUNICIPIO: "Municipio",
   Z_CENTRO: "Centro",
   Z_GARIBALDI: "Garibaldi",
-};
-
-const LABEL_OFFSET: Record<string, { dx: number; dy: number }> = {
-  Z_FUORIGROTTA: { dx: -18, dy: 4 },
-  Z_MERGELLINA: { dx: -12, dy: -14 },
-  Z_MUNICIPIO: { dx: 24, dy: 30 },
-  Z_CENTRO: { dx: 40, dy: -22 },
-  Z_GARIBALDI: { dx: 34, dy: 14 },
 };
 
 const RANK: Record<Severity, number> = { low: 1, medium: 2, high: 3, critical: 4 };
@@ -66,13 +51,14 @@ export function SimplifiedMap({ findings }: { findings: Finding[] }) {
       }
     }
     return Object.values(NAPLES_ZONES).map((zone) => {
-      const [x, y] = project(zone.center[0], zone.center[1]);
+      const [lng, lat] = zone.center;
       const severity = severityByZone.get(zone.zone_id);
       return {
         zoneId: zone.zone_id,
         label: zone.label,
-        x,
-        y,
+        shortLabel: SHORT_LABEL[zone.zone_id] ?? zone.label,
+        lat,
+        lng,
         tone: zoneTone(severity),
         note: notesByZone.get(zone.zone_id),
       };
@@ -85,7 +71,8 @@ export function SimplifiedMap({ findings }: { findings: Finding[] }) {
     <section
       style={{
         position: "relative",
-        background: "linear-gradient(180deg, #F1F5F9 0%, #E2E8F0 100%)",
+        height: "420px",
+        background: "#E2E8F0",
         border: `1px solid ${t.color.border.subtle}`,
         borderRadius: t.radius.lg,
         overflow: "hidden",
@@ -93,81 +80,115 @@ export function SimplifiedMap({ findings }: { findings: Finding[] }) {
       }}
       aria-label="Mappa semplificata di Napoli"
     >
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Zone della città" style={{ width: "100%", display: "block" }}>
-        <path
-          d={`M0 ${HEIGHT} C 120 ${HEIGHT - 90}, 220 ${HEIGHT - 30}, 340 ${HEIGHT - 20} L 340 ${HEIGHT} Z`}
-          fill="#BAE6FD"
-          opacity="0.55"
-        />
-        {zones.map((zone) => (
-          <g
-            key={zone.zoneId}
-            role="button"
-            tabIndex={0}
-            aria-label={`${zone.label}: ${zone.tone.label}`}
-            onClick={() => setSelected(zone.zoneId)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setSelected(zone.zoneId);
-              }
-            }}
-            style={{ cursor: "pointer" }}
-          >
-            <circle cx={zone.x} cy={zone.y} r="20" fill={`${zone.tone.color}22`} stroke={zone.tone.color} strokeWidth="2" />
-            <circle cx={zone.x} cy={zone.y} r="7" fill={zone.tone.color} />
-            <text
-              x={zone.x + (LABEL_OFFSET[zone.zoneId]?.dx ?? 0)}
-              y={zone.y - 28 + (LABEL_OFFSET[zone.zoneId]?.dy ?? 0)}
-              textAnchor="middle"
-              fontSize="12"
-              fontWeight="600"
-              fill={t.color.text.primary}
-              stroke="#FFFFFF"
-              strokeWidth="3"
-              paintOrder="stroke"
-            >
-              {SHORT_LABEL[zone.zoneId] ?? zone.label}
-            </text>
-          </g>
-        ))}
-      </svg>
+      <SlippyMap
+        center={MAP_CENTER}
+        zoom={12}
+        minZoom={11}
+        maxZoom={15}
+        theme="light"
+        bounds={MAP_BOUNDS}
+        controls={false}
+        ariaLabel="Mappa reale di Napoli per cittadino e turista"
+      >
+        {(project) =>
+          zones.map((zone) => {
+            const { x, y } = project(zone.lat, zone.lng);
+            return (
+              <button
+                key={zone.zoneId}
+                type="button"
+                onClick={() => setSelected(zone.zoneId)}
+                aria-label={`${zone.label}: ${zone.tone.label}`}
+                style={{
+                  position: "absolute",
+                  left: `${x}px`,
+                  top: `${y}px`,
+                  transform: "translate(-50%, -50%)",
+                  display: "grid",
+                  justifyItems: "center",
+                  gap: "3px",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  pointerEvents: "auto",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "22px",
+                    height: "22px",
+                    borderRadius: "50%",
+                    background: zone.tone.color,
+                    border: "3px solid #FFFFFF",
+                    boxShadow: "0 2px 8px rgba(15,23,42,0.28)",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: t.font.weight.semibold,
+                    color: t.color.text.primary,
+                    background: "rgba(255,255,255,0.94)",
+                    border: `1px solid ${t.color.border.subtle}`,
+                    borderRadius: t.radius.pill,
+                    padding: "1px 7px",
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 1px 4px rgba(15,23,42,0.12)",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {zone.shortLabel}
+                </span>
+              </button>
+            );
+          })
+        }
+      </SlippyMap>
 
-      <footer
+      <div
         style={{
+          position: "absolute",
+          left: t.space[3],
+          bottom: t.space[3],
           display: "flex",
-          gap: t.space[4],
-          padding: `${t.space[2]} ${t.space[4]}`,
+          gap: t.space[3],
+          padding: `${t.space[1]} ${t.space[3]}`,
           fontSize: t.font.size.xs,
           color: t.color.text.secondary,
-          background: "rgba(255,255,255,0.7)",
+          background: "rgba(255,255,255,0.92)",
+          border: `1px solid ${t.color.border.subtle}`,
+          borderRadius: t.radius.pill,
           flexWrap: "wrap",
+          pointerEvents: "none",
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color.severity.low }} /> Mobilità fluida
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color.severity.medium }} /> Rallentamenti
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: t.color.severity.critical }} /> Blocchi
         </span>
-      </footer>
+      </div>
 
       {selectedZone ? (
         <div
           role="status"
           style={{
             position: "absolute",
-            left: t.space[4],
-            top: t.space[4],
+            left: t.space[3],
+            top: t.space[3],
+            zIndex: 5,
             background: t.color.bg.elevated,
             border: `1px solid ${t.color.border.subtle}`,
             borderRadius: t.radius.md,
             padding: t.space[3],
             boxShadow: t.shadow.elevated,
-            maxWidth: "260px",
+            maxWidth: "280px",
             display: "grid",
             gap: "4px",
           }}

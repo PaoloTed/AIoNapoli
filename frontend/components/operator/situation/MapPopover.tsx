@@ -18,6 +18,8 @@ export function MapPopover({ zoneId, findings, onClose }: { zoneId: string; find
         position: "absolute",
         top: t.space[4],
         right: t.space[4],
+        zIndex: 4,
+        pointerEvents: "auto",
         width: "300px",
         maxHeight: "calc(100% - 32px)",
         overflowY: "auto",

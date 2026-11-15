@@ -50,7 +50,14 @@ Nessun layer tecnico sulla superficie recipient: niente flotta, densità o reaso
 | Backend spento (USE_MOCKS=false) | Dopo il timeout di 8s l'app passa ai mock, mostra il banner di simulazione e riproduce lo stream di negoziazione. |
 | `NEXT_PUBLIC_DEMO_SCENARIO` | Scenario di default (default `bagnoli`). |
 
-## 3. Demo consigliata (90 secondi)
+## 3. Mappe reali
+
+- Componente condiviso `components/map/SlippyMap.tsx`: tile raster OpenStreetMap (nessuna API key), proiezione Web Mercator, pan/zoom, bbox di Napoli.
+- Operatore: tema scuro (filtro CSS sui tile), layer densità, marker zona, flotta con bearing, popover, legenda e controlli zoom.
+- Recipient: tile chiari, marker arrotondati per zona, popover in linguaggio naturale, nessun layer tecnico.
+- Attribuzione OSM sempre visibile; nessun token richiesto.
+
+## 4. Demo consigliata (90 secondi)
 
 1. `/` — vista Cittadino: messaggio contestuale, card e mappa.
 2. Switch su **Turista**: palette corallo e suggerimenti dedicati.
@@ -62,7 +69,7 @@ Nessun layer tecnico sulla superficie recipient: niente flotta, densità o reaso
 8. `Ctrl+K` — chiedi *"Cosa è stato scartato?"* e apri una citazione ("Vedi nella timeline").
 9. (Opzionale) arresta il backend e ricarica: banner simulazione e stesso flusso offline.
 
-## 4. QA visiva
+## 5. QA visiva
 
 Screenshot prodotti in `frontend/.design-refs/results/`:
 
@@ -71,7 +78,7 @@ Screenshot prodotti in `frontend/.design-refs/results/`:
 
 Riferimenti esterni e analisi: `frontend/.design-refs/analysis.md`. Gli screenshot dei riferimenti non sono versionati (vedi `.gitignore`).
 
-## 5. Brand identity
+## 6. Brand identity
 
 Asset ufficiali copiati da `ricerche/ricerca6/` in `frontend/public/brand/`:
 
@@ -84,7 +91,7 @@ Asset ufficiali copiati da `ricerche/ricerca6/` in `frontend/public/brand/`:
 
 Il componente condiviso è `components/brand/BrandLogo.tsx` (`variant: icon | full | full-light | wordmark`).
 
-## 6. Gate eseguiti
+## 7. Gate eseguiti
 
 ```powershell
 cd hackaton2026CDS/frontend

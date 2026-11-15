@@ -1,5 +1,5 @@
 /**
- * @purpose Mappa a tile reale (OpenStreetMap/CARTO) con proiezione Web Mercator condivisa
+ * @purpose Mappa a tile reale OpenStreetMap con proiezione Web Mercator condivisa
  * @contracts nessuno (componente grafico)
  * @tokens shared
  * @verified 2026-11-15

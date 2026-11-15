@@ -7,6 +7,7 @@
 
 import type { Finding, Target } from "@/lib/types/contracts";
 import { formatPercent } from "@/lib/format";
+import { NAPLES_ZONES } from "@/lib/scenarios";
 
 export type StatusCardSpec = {
   icon: string;
@@ -53,11 +54,32 @@ function crowdingCard(findings: Finding[]): StatusCardSpec {
       tone: "positive",
     };
   }
+
   const density = crowding.content.density ?? 0;
+  const zoneId = crowding.content.zone_id;
+  const zoneName = zoneId ? (NAPLES_ZONES[zoneId]?.label ?? zoneId) : undefined;
+  const note = crowding.content.note;
+  const attendance = crowding.content.expected_attendance;
+
+  const title =
+    density >= 0.8
+      ? `${zoneName ? `${zoneName}: ` : ""}zona molto affollata`
+      : density >= 0.6
+        ? `${zoneName ? `${zoneName}: ` : ""}zona affollata`
+        : `Affollamento contenuto${zoneName ? ` a ${zoneName}` : ""}`;
+
+  const reasons: string[] = [];
+  if (note) reasons.push(note);
+  if (!note?.includes("%")) reasons.push(`saturazione ${formatPercent(density)}`);
+  if (typeof attendance === "number") {
+    reasons.push(`${attendance.toLocaleString("it-IT")} presenze attese`);
+  }
+  if (reasons.length === 0) reasons.push(`Saturazione attuale ${formatPercent(density)}.`);
+
   return {
     icon: "👥",
-    title: density >= 0.8 ? "Zona molto affollata" : density >= 0.6 ? "Zona affollata" : "Affollamento contenuto",
-    detail: crowding.content.note ?? `Saturazione attuale ${formatPercent(density)}.`,
+    title,
+    detail: reasons.join(" · "),
     tone: density >= 0.8 ? "alert" : density >= 0.6 ? "attention" : "positive",
   };
 }

@@ -3,13 +3,44 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+import re
+from collections.abc import Sequence
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from app.db.migrations import is_sqlite_connection
 from app.domain.models.decision import Decision
+from app.domain.models.disruption import DailyRecurrence
 from app.domain.models.finding import Finding
 from app.utils.canonical import canonical_json
+
+_SCHEMA_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+_DATASET_KEY_RE = re.compile(r"^[a-z0-9_]+$")
+
+
+def _interval_to_gtfs_time(value: Any) -> str | None:
+    """Convert a PostgreSQL interval to GTFS HH:MM:SS without wrapping +24h."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, timedelta):
+        total = int(value.total_seconds())
+        sign = "-" if total < 0 else ""
+        total = abs(total)
+        hours, rem = divmod(total, 3600)
+        minutes, seconds = divmod(rem, 60)
+        return f"{sign}{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return str(value)
+
+
+def _as_date(value: Any) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value))
 
 
 def _parse_dt(value: Any) -> datetime:
@@ -30,11 +61,45 @@ def _as_iso(value: Any) -> str:
 
 
 class PostgresSourceRepository:
-    """SQL repository supporting both PostgreSQL (psycopg) and SQLite connections."""
+    """SQL repository supporting both PostgreSQL (psycopg) and SQLite connections.
 
-    def __init__(self, conn: Any) -> None:
+    When ``gtfs_schema`` is provided (PostgreSQL only), the network getters read
+    the authoritative GTFS schema imported by ``gtfs-via-postgres`` instead of
+    the application tables in ``public``. Writes and the demo seed continue to
+    use the application tables; the imported GTFS is never copied into them.
+    """
+
+    def __init__(
+        self,
+        conn: Any,
+        *,
+        gtfs_schema: str | None = None,
+        gtfs_dataset_key: str = "eav",
+        gtfs_datasets: Sequence[tuple[str, str]] | None = None,
+    ) -> None:
         self._conn = conn
         self._sqlite = is_sqlite_connection(conn)
+        configured: list[tuple[str, str]] = []
+        if not self._sqlite:
+            if gtfs_datasets:
+                for key, schema in gtfs_datasets:
+                    if not _DATASET_KEY_RE.match(key):
+                        raise ValueError(f"gtfs_dataset_key non valido: {key!r}")
+                    if not _SCHEMA_RE.match(schema):
+                        raise ValueError(f"gtfs_schema non valido: {schema!r}")
+                    configured.append((key, schema))
+            elif gtfs_schema:
+                if not _SCHEMA_RE.match(gtfs_schema):
+                    raise ValueError(f"gtfs_schema non valido: {gtfs_schema!r}")
+                configured.append((gtfs_dataset_key, gtfs_schema))
+        keys = [key for key, _ in configured]
+        schemas = [schema for _, schema in configured]
+        if len(set(keys)) != len(keys) or len(set(schemas)) != len(schemas):
+            raise ValueError("gtfs_datasets contiene chiavi o schemi duplicati")
+        self._gtfs_datasets = configured
+        self._multi_dataset = len(configured) > 1
+        self._gtfs_schema = configured[0][1] if configured else None
+        self._gtfs_dataset_key = configured[0][0] if configured else gtfs_dataset_key
 
     def _ph(self, count: int) -> str:
         token = "?" if self._sqlite else "%s"
@@ -56,6 +121,90 @@ class PostgresSourceRepository:
         cur.execute(sql, params)
         rows = cur.fetchall()
         return [self._row_to_dict(cur, r) for r in rows]
+
+    def _gtfs_contexts(self) -> list[dict[str, Any]]:
+        """Return active dataset metadata in configured order, failing loudly if absent."""
+        contexts: list[dict[str, Any]] = []
+        for dataset_key, schema in self._gtfs_datasets:
+            rows = self._fetchall(
+                """
+                SELECT dataset_key, operator_id, operator_name, agency_ids,
+                       source_sha256, dataset_version, gtfs_schema, imported_at,
+                       published_at, row_counts
+                FROM gtfs_datasets
+                WHERE dataset_key = %s AND is_active = TRUE
+                ORDER BY published_at DESC
+                LIMIT 1
+                """,
+                (dataset_key,),
+            )
+            if not rows:
+                raise RuntimeError(
+                    "GTFS autorevole non registrato: eseguire l'import e pubblicare "
+                    f"il dataset '{dataset_key}'"
+                )
+            if rows[0]["gtfs_schema"] != schema:
+                raise RuntimeError(
+                    "GTFS dataset/schema non coerenti: "
+                    f"'{dataset_key}' pubblicato in '{rows[0]['gtfs_schema']}', "
+                    f"configurato in '{schema}'"
+                )
+            contexts.append(rows[0])
+        return contexts
+
+    def _gtfs_context(self) -> dict[str, Any]:
+        contexts = self._gtfs_contexts()
+        if not contexts:
+            raise RuntimeError("nessun dataset GTFS autorevole configurato")
+        return contexts[0]
+
+    def _context_for(self, scoped_id: str | None) -> list[dict[str, Any]]:
+        """Return contexts selected by an optional ``dataset_key:`` prefix."""
+        contexts = self._gtfs_contexts()
+        if not scoped_id or not self._multi_dataset:
+            return contexts
+        for context in contexts:
+            prefix = f"{context['dataset_key']}:"
+            if scoped_id.startswith(prefix):
+                return [context]
+        return contexts
+
+    def _qualify_id(self, dataset_key: str, value: Any) -> Any:
+        if value is None or not self._multi_dataset:
+            return value
+        return f"{dataset_key}:{value}"
+
+    def _strip_scope(self, value: str, context: dict[str, Any]) -> str:
+        prefix = f"{context['dataset_key']}:"
+        return value[len(prefix) :] if value.startswith(prefix) else value
+
+    def _annotate(
+        self,
+        row: dict[str, Any],
+        context: dict[str, Any],
+        *,
+        id_fields: tuple[str, ...],
+    ) -> dict[str, Any]:
+        """Keep original GTFS ids and expose dataset-scoped ids when needed."""
+        for field in id_fields:
+            row[f"gtfs_{field}"] = row[field]
+        row["dataset_key"] = context["dataset_key"]
+        row["gtfs_schema"] = context["gtfs_schema"]
+        for field in id_fields:
+            row[field] = self._qualify_id(context["dataset_key"], row[field])
+        return row
+
+    def get_datasets_info(self) -> list[dict[str, Any]]:
+        """Expose every active dataset, preserving feed identity and metadata."""
+        if not self._gtfs_datasets:
+            return []
+        return self._gtfs_contexts()
+
+    def get_dataset_info(self) -> dict[str, Any] | None:
+        """Expose the primary active dataset metadata (hash, version, operator, schema)."""
+        if not self._gtfs_datasets:
+            return None
+        return self._gtfs_context()
 
     def upsert_zones(self, rows: list[dict[str, Any]]) -> int:
         if not rows:
@@ -117,6 +266,32 @@ class PostgresSourceRepository:
         return len(rows)
 
     def get_stops(self, zone_id: str | None = None) -> list[dict[str, Any]]:
+        if self._gtfs_datasets:
+            # GTFS zone_id is the provider's fare zone, not a project operational
+            # zone. Until a stop is explicitly classified, return NULL, never an
+            # artificial zone.
+            if zone_id is not None:
+                return []
+            rows: list[dict[str, Any]] = []
+            for ctx in self._gtfs_contexts():
+                stops = self._fetchall(
+                    f"""
+                    SELECT s.stop_id, s.stop_name, NULL::text AS zone_id,
+                           ST_AsText(s.stop_loc) AS geometry,
+                           %s AS source_id, %s AS data_reference,
+                           FALSE AS is_simulated, %s AS ingested_at,
+                           s.zone_id AS gtfs_zone_id
+                    FROM "{ctx['gtfs_schema']}".stops s
+                    ORDER BY s.stop_id
+                    """,
+                    (
+                        ctx["operator_id"],
+                        f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                        ctx["imported_at"],
+                    ),
+                )
+                rows.extend(self._annotate(s, ctx, id_fields=("stop_id",)) for s in stops)
+            return rows
         p = self._p()
         if zone_id is not None:
             return self._fetchall(
@@ -160,6 +335,26 @@ class PostgresSourceRepository:
         return len(rows)
 
     def get_routes(self) -> list[dict[str, Any]]:
+        if self._gtfs_datasets:
+            rows: list[dict[str, Any]] = []
+            for ctx in self._gtfs_contexts():
+                routes = self._fetchall(
+                    f"""
+                    SELECT r.route_id, r.route_short_name, r.route_long_name,
+                           r.route_type::text::integer AS route_type, r.agency_id,
+                           %s AS source_id, %s AS data_reference,
+                           FALSE AS is_simulated, %s AS ingested_at
+                    FROM "{ctx['gtfs_schema']}".routes r
+                    ORDER BY r.route_id
+                    """,
+                    (
+                        ctx["operator_id"],
+                        f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                        ctx["imported_at"],
+                    ),
+                )
+                rows.extend(self._annotate(r, ctx, id_fields=("route_id",)) for r in routes)
+            return rows
         return self._fetchall("SELECT * FROM routes ORDER BY route_id")
 
     def upsert_trips(self, rows: list[dict[str, Any]]) -> int:
@@ -198,6 +393,34 @@ class PostgresSourceRepository:
         return len(rows)
 
     def get_trips(self, route_id: str | None = None) -> list[dict[str, Any]]:
+        if self._gtfs_datasets:
+            rows: list[dict[str, Any]] = []
+            for ctx in self._context_for(route_id):
+                where = ""
+                params: tuple[Any, ...] = (
+                    ctx["operator_id"],
+                    f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                    ctx["imported_at"],
+                )
+                if route_id is not None:
+                    where = "WHERE t.route_id = %s"
+                    params = (*params, self._strip_scope(route_id, ctx))
+                trips = self._fetchall(
+                    f"""
+                    SELECT t.trip_id, t.route_id, t.service_id, t.trip_headsign,
+                           t.trip_short_name, t.direction_id, t.shape_id,
+                           %s AS source_id, %s AS data_reference,
+                           FALSE AS is_simulated, %s AS ingested_at
+                    FROM "{ctx['gtfs_schema']}".trips t
+                    {where}
+                    ORDER BY t.trip_id
+                    """,
+                    params,
+                )
+                rows.extend(
+                    self._annotate(t, ctx, id_fields=("trip_id", "route_id")) for t in trips
+                )
+            return rows
         p = self._p()
         if route_id is not None:
             return self._fetchall(
@@ -244,6 +467,37 @@ class PostgresSourceRepository:
         return len(rows)
 
     def get_stop_times(self, trip_id: str | None = None) -> list[dict[str, Any]]:
+        if self._gtfs_datasets:
+            rows: list[dict[str, Any]] = []
+            for ctx in self._context_for(trip_id):
+                where = ""
+                params: tuple[Any, ...] = (
+                    ctx["operator_id"],
+                    f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                    ctx["imported_at"],
+                )
+                if trip_id is not None:
+                    where = "WHERE st.trip_id = %s"
+                    params = (*params, self._strip_scope(trip_id, ctx))
+                times = self._fetchall(
+                    f"""
+                    SELECT st.trip_id, st.stop_id, st.stop_sequence,
+                           st.arrival_time, st.departure_time, st.stop_headsign,
+                           %s AS source_id, %s AS data_reference,
+                           FALSE AS is_simulated, %s AS ingested_at
+                    FROM "{ctx['gtfs_schema']}".stop_times st
+                    {where}
+                    ORDER BY st.trip_id, st.stop_sequence
+                    """,
+                    params,
+                )
+                for row in times:
+                    row["arrival_time"] = _interval_to_gtfs_time(row.get("arrival_time"))
+                    row["departure_time"] = _interval_to_gtfs_time(row.get("departure_time"))
+                rows.extend(
+                    self._annotate(row, ctx, id_fields=("trip_id", "stop_id")) for row in times
+                )
+            return rows
         p = self._p()
         if trip_id is not None:
             return self._fetchall(
@@ -252,19 +506,161 @@ class PostgresSourceRepository:
             )
         return self._fetchall("SELECT * FROM stop_times ORDER BY trip_id, stop_sequence")
 
+    def get_shapes(self, shape_id: str | None = None) -> list[dict[str, Any]]:
+        """Return imported shapes as explicit WKT, never driver-dependent geometry."""
+        if not self._gtfs_datasets:
+            raise RuntimeError("get_shapes richiede un dataset GTFS autorevole")
+        rows: list[dict[str, Any]] = []
+        for ctx in self._context_for(shape_id):
+            where = ""
+            params: tuple[Any, ...] = (
+                ctx["operator_id"],
+                f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                ctx["imported_at"],
+            )
+            if shape_id is not None:
+                where = "WHERE sa.shape_id = %s"
+                params = (*params, self._strip_scope(shape_id, ctx))
+            shapes = self._fetchall(
+                f"""
+                SELECT sa.shape_id, ST_AsText(sa.shape) AS geometry,
+                       sa.distances_travelled,
+                       %s AS source_id, %s AS data_reference,
+                       FALSE AS is_simulated, %s AS ingested_at
+                FROM "{ctx['gtfs_schema']}".shapes_aggregated sa
+                {where}
+                ORDER BY sa.shape_id
+                """,
+                params,
+            )
+            rows.extend(self._annotate(s, ctx, id_fields=("shape_id",)) for s in shapes)
+        return rows
+
+    def get_active_trips(self, service_date: Any) -> list[dict[str, Any]]:
+        """Return trips active on a service date, using GTFS calendar + exceptions."""
+        if not self._gtfs_datasets:
+            raise RuntimeError("get_active_trips richiede un dataset GTFS autorevole")
+        rows: list[dict[str, Any]] = []
+        for ctx in self._gtfs_contexts():
+            trips = self._fetchall(
+                f"""
+                SELECT t.trip_id, t.route_id, t.service_id, t.trip_headsign,
+                       t.trip_short_name, t.direction_id, t.shape_id,
+                       %s AS source_id, %s AS data_reference,
+                       FALSE AS is_simulated, %s AS ingested_at
+                FROM "{ctx['gtfs_schema']}".trips t
+                JOIN "{ctx['gtfs_schema']}".service_days sd ON sd.service_id = t.service_id
+                WHERE sd.date = %s
+                ORDER BY t.trip_id
+                """,
+                (
+                    ctx["operator_id"],
+                    f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                    ctx["imported_at"],
+                    _as_date(service_date),
+                ),
+            )
+            rows.extend(
+                self._annotate(t, ctx, id_fields=("trip_id", "route_id")) for t in trips
+            )
+        return rows
+
+    def get_active_stop_times(self, service_date: Any) -> list[dict[str, Any]]:
+        """Return stop times for trips active on a service date, keeping >24h times."""
+        if not self._gtfs_datasets:
+            raise RuntimeError("get_active_stop_times richiede un dataset GTFS autorevole")
+        rows: list[dict[str, Any]] = []
+        for ctx in self._gtfs_contexts():
+            times = self._fetchall(
+                f"""
+                SELECT st.trip_id, st.stop_id, st.stop_sequence,
+                       st.arrival_time, st.departure_time, st.stop_headsign,
+                       %s AS source_id, %s AS data_reference,
+                       FALSE AS is_simulated, %s AS ingested_at
+                FROM "{ctx['gtfs_schema']}".stop_times st
+                JOIN "{ctx['gtfs_schema']}".trips t ON t.trip_id = st.trip_id
+                JOIN "{ctx['gtfs_schema']}".service_days sd ON sd.service_id = t.service_id
+                WHERE sd.date = %s
+                ORDER BY st.trip_id, st.stop_sequence
+                """,
+                (
+                    ctx["operator_id"],
+                    f"gtfs:{ctx['dataset_key']}:{ctx['source_sha256']}",
+                    ctx["imported_at"],
+                    _as_date(service_date),
+                ),
+            )
+            for row in times:
+                row["arrival_time"] = _interval_to_gtfs_time(row.get("arrival_time"))
+                row["departure_time"] = _interval_to_gtfs_time(row.get("departure_time"))
+            rows.extend(
+                self._annotate(row, ctx, id_fields=("trip_id", "stop_id")) for row in times
+            )
+        return rows
+
     def upsert_service_alerts(self, rows: list[dict[str, Any]]) -> int:
         if not rows:
             return 0
         cur = self._conn.cursor()
         for row in rows:
+            now = row.get("ingested_at", datetime.now(timezone.utc))
+            if self._sqlite:
+                cur.execute(
+                    f"""
+                    INSERT INTO service_alerts (
+                        alert_id, route_id, stop_id, severity, valid_from, valid_to,
+                        source_id, confidence, title, body, zone_id, is_simulated,
+                        data_reference, ingested_at
+                    )
+                    VALUES ({self._ph(14)})
+                    ON CONFLICT (source_id, alert_id) DO UPDATE SET
+                        route_id = EXCLUDED.route_id,
+                        stop_id = EXCLUDED.stop_id,
+                        severity = EXCLUDED.severity,
+                        valid_from = EXCLUDED.valid_from,
+                        valid_to = EXCLUDED.valid_to,
+                        confidence = EXCLUDED.confidence,
+                        title = EXCLUDED.title,
+                        body = EXCLUDED.body,
+                        zone_id = EXCLUDED.zone_id,
+                        is_simulated = EXCLUDED.is_simulated,
+                        data_reference = EXCLUDED.data_reference
+                    """,
+                    (
+                        row["alert_id"],
+                        row.get("route_id"),
+                        row.get("stop_id"),
+                        row["severity"],
+                        _as_iso(row["valid_from"]),
+                        _as_iso(row["valid_to"])
+                        if row.get("valid_to") is not None
+                        else None,
+                        row["source_id"],
+                        float(row["confidence"]),
+                        row["title"],
+                        row.get("body"),
+                        row.get("zone_id"),
+                        int(bool(row.get("is_simulated", False))),
+                        row["data_reference"],
+                        _as_iso(now),
+                    ),
+                )
+                continue
+
+            recurrence = row.get("recurrence")
+            if recurrence is not None and not isinstance(recurrence, str):
+                recurrence = json.dumps(recurrence, ensure_ascii=False)
             cur.execute(
                 f"""
                 INSERT INTO service_alerts (
                     alert_id, route_id, stop_id, severity, valid_from, valid_to,
                     source_id, confidence, title, body, zone_id, is_simulated,
-                    data_reference, ingested_at
+                    data_reference, ingested_at, alert_type, effect, source_url,
+                    content_hash, published_at, observed_at, timezone,
+                    lifecycle_status, verification_status, uncertainty,
+                    next_review_at, recurrence, revision, updated_at
                 )
-                VALUES ({self._ph(14)})
+                VALUES ({self._ph(28)})
                 ON CONFLICT (source_id, alert_id) DO UPDATE SET
                     route_id = EXCLUDED.route_id,
                     stop_id = EXCLUDED.stop_id,
@@ -276,7 +672,22 @@ class PostgresSourceRepository:
                     body = EXCLUDED.body,
                     zone_id = EXCLUDED.zone_id,
                     is_simulated = EXCLUDED.is_simulated,
-                    data_reference = EXCLUDED.data_reference
+                    data_reference = EXCLUDED.data_reference,
+                    ingested_at = EXCLUDED.ingested_at,
+                    alert_type = EXCLUDED.alert_type,
+                    effect = EXCLUDED.effect,
+                    source_url = EXCLUDED.source_url,
+                    content_hash = EXCLUDED.content_hash,
+                    published_at = EXCLUDED.published_at,
+                    observed_at = EXCLUDED.observed_at,
+                    timezone = EXCLUDED.timezone,
+                    lifecycle_status = EXCLUDED.lifecycle_status,
+                    verification_status = EXCLUDED.verification_status,
+                    uncertainty = EXCLUDED.uncertainty,
+                    next_review_at = EXCLUDED.next_review_at,
+                    recurrence = EXCLUDED.recurrence,
+                    revision = EXCLUDED.revision,
+                    updated_at = EXCLUDED.updated_at
                 """,
                 (
                     row["alert_id"],
@@ -290,11 +701,23 @@ class PostgresSourceRepository:
                     row["title"],
                     row.get("body"),
                     row.get("zone_id"),
-                    int(bool(row.get("is_simulated", False)))
-                    if self._sqlite
-                    else bool(row.get("is_simulated", False)),
+                    bool(row.get("is_simulated", False)),
                     row["data_reference"],
-                    _as_iso(row.get("ingested_at", datetime.now(timezone.utc))),
+                    _as_iso(now),
+                    row.get("alert_type", "info"),
+                    row.get("effect", "info"),
+                    row.get("source_url"),
+                    row.get("content_hash"),
+                    _as_iso(row.get("published_at", row["valid_from"])),
+                    _as_iso(row["observed_at"]) if row.get("observed_at") else None,
+                    row.get("timezone", "Europe/Rome"),
+                    row.get("lifecycle_status", "active"),
+                    row.get("verification_status", "unverified"),
+                    row.get("uncertainty", "medium"),
+                    _as_iso(row["next_review_at"]) if row.get("next_review_at") else None,
+                    recurrence,
+                    int(row.get("revision", 1)),
+                    _as_iso(row.get("updated_at", now)),
                 ),
             )
         self._conn.commit()
@@ -305,9 +728,26 @@ class PostgresSourceRepository:
         if now is None:
             return items
         ref_now = _parse_dt(now)
-        return [
-            r for r in items if r.get("valid_to") is None or _parse_dt(r["valid_to"]) >= ref_now
-        ]
+        active: list[dict[str, Any]] = []
+        for row in items:
+            if row.get("lifecycle_status", "active") != "active":
+                continue
+            if row.get("published_at") and _parse_dt(row["published_at"]) > ref_now:
+                continue
+            if _parse_dt(row["valid_from"]) > ref_now:
+                continue
+            if row.get("valid_to") is not None and _parse_dt(row["valid_to"]) < ref_now:
+                continue
+            recurrence = row.get("recurrence")
+            if recurrence:
+                if isinstance(recurrence, str):
+                    recurrence = json.loads(recurrence)
+                window = DailyRecurrence.model_validate(recurrence)
+                local = ref_now.astimezone(ZoneInfo(row.get("timezone") or "Europe/Rome"))
+                if not window.applies(local):
+                    continue
+            active.append(row)
+        return active
 
     def upsert_events(self, rows: list[dict[str, Any]]) -> int:
         if not rows:

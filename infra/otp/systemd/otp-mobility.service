@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenTripPlanner 2.10 - grafo mobilità EAV+ANM
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/r0x4n/otp-live
+ExecStart=/usr/lib/jvm/java-25-openjdk-amd64/bin/java -Xms512m -Xmx2g -jar /home/r0x4n/otp-1a/otp-shaded-2.10.0.jar --load --serve otp-data
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=default.target

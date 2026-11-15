@@ -48,3 +48,25 @@ monitoring_text:
     assert exc_env.value.code == "config_invalid"
     assert exc_env.value.field == "env"
 
+
+def test_routing_environment_invalid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Routing mode and timezone are validated independently from APP_PROFILE."""
+    monkeypatch.setenv("ROUTING_MODE", "banana")
+    with pytest.raises(ConfigInvalidError):
+        load_config()
+
+    monkeypatch.setenv("ROUTING_MODE", "real")
+    monkeypatch.setenv("ROUTING_TIMEZONE", "Mars/Olympus")
+    with pytest.raises(ConfigInvalidError):
+        load_config()
+
+    monkeypatch.setenv("ROUTING_TIMEZONE", "Europe/Rome")
+    monkeypatch.setenv("GTFS_SCHEMA", "gtfs-eav; DROP SCHEMA public")
+    with pytest.raises(ConfigInvalidError):
+        load_config()
+
+    monkeypatch.setenv("GTFS_SCHEMA", "gtfs_eav")
+    monkeypatch.setenv("GTFS_DATASETS", "eav:gtfs_eav,anm")
+    with pytest.raises(ConfigInvalidError):
+        load_config()
+

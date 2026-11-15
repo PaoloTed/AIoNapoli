@@ -21,8 +21,10 @@ from app.domain.models.finding import AgentName, Finding
 from app.domain.models.trace import Trace
 from app.repositories.audit import AuditStore, InMemoryAuditStore, PostgresAuditStore
 from app.repositories.base import SourceRepository
+from app.repositories.disruptions import DisruptionRepository
 from app.repositories.memory import InMemorySourceRepository
 from app.repositories.postgres import PostgresSourceRepository
+from app.repositories.territory import OSMTerritoryRepository
 from app.services.orchestrator.config import load_config
 from app.services.orchestrator.pipeline import run_pipeline
 from app.services.validation.finding_validator import (
@@ -56,7 +58,18 @@ def build_stores_for_profile(
         database_url=config.database_url,
     )
     apply_migrations(conn)
-    return PostgresSourceRepository(conn), PostgresAuditStore(conn), conn
+    gtfs_schema = config.gtfs_schema if config.app_profile == "postgres" else None
+    gtfs_datasets = config.gtfs_dataset_pairs() if config.app_profile == "postgres" else None
+    return (
+        PostgresSourceRepository(
+            conn,
+            gtfs_schema=gtfs_schema or None,
+            gtfs_dataset_key=config.gtfs_dataset_key,
+            gtfs_datasets=gtfs_datasets,
+        ),
+        PostgresAuditStore(conn),
+        conn,
+    )
 
 
 class BackendService:
@@ -72,6 +85,8 @@ class BackendService:
     ) -> None:
         self.config = config or load_config()
         self.clock = clock or SystemClock()
+        self.territory_repository: OSMTerritoryRepository | None = None
+        self.disruption_repository: DisruptionRepository | None = None
         if repository is not None and audit_store is not None:
             self.repository: SourceRepository = repository
             self.audit_store: AuditStore = audit_store
@@ -81,6 +96,18 @@ class BackendService:
             self.repository = repo
             self.audit_store = audit
             self._db_conn = conn
+            if conn is not None and self.config.app_profile == "postgres":
+                self.territory_repository = OSMTerritoryRepository(
+                    conn,
+                    schema=self.config.osm_schema,
+                    dataset_key=self.config.osm_dataset_key,
+                )
+                self.disruption_repository = DisruptionRepository(
+                    conn,
+                    gtfs_schema=self.config.gtfs_schema,
+                    gtfs_dataset_key=self.config.gtfs_dataset_key,
+                    osm_dataset_key=self.config.osm_dataset_key,
+                )
         self._scenarios = _load_scenario_fixtures()
 
     def close(self) -> None:

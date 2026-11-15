@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
 LABEL maintainer="Hackathon 2026 CDS"
-LABEL description="Ubuntu Server with PostgreSQL 18, PostGIS, gtfs-via-postgres, and monthly GTFS/PBF ingestion"
+LABEL description="Ubuntu Server with PostgreSQL 18, PostGIS, GTFS/OSM controlled ingestion"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC \
@@ -42,11 +42,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgis \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Install Node.js 22 LTS and gtfs-via-postgres
+# 4. Install Node.js 22 LTS and a pinned gtfs-via-postgres
+ARG GTFS_VIA_POSTGRES_VERSION=4.13.0
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
-    npm install -g gtfs-via-postgres && \
-    ln -sf $(which gtfs-to-sql) /usr/local/bin/gtfs-via-postgres && \
+    npm install -g "gtfs-via-postgres@${GTFS_VIA_POSTGRES_VERSION}" && \
     rm -rf /var/lib/apt/lists/*
 
 # 5. Create storage directories
@@ -57,16 +57,31 @@ RUN mkdir -p /data/gtfs /data/osm /var/log/postgresql /var/run/postgresql "$PGDA
 COPY crontab /etc/cron.d/monthly-downloads
 COPY scripts/download-monthly.sh /usr/local/bin/download-monthly.sh
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY import-gtfs.sh /usr/local/bin/import-gtfs.sh
+COPY gtfs-metadata.sql /usr/local/share/gtfs-metadata.sql
+COPY import-osm.sh /usr/local/bin/import-osm.sh
+COPY osm-territory.lua /usr/local/share/osm-territory.lua
+COPY osm-territory.sql /usr/local/share/osm-territory.sql
+COPY sync-gtfs-refs.sql /usr/local/share/sync-gtfs-refs.sql
+COPY sync-osm-refs.sql /usr/local/share/sync-osm-refs.sql
 
 RUN chmod 0644 /etc/cron.d/monthly-downloads && \
     crontab /etc/cron.d/monthly-downloads && \
-    chmod +x /usr/local/bin/download-monthly.sh /usr/local/bin/entrypoint.sh
+    chmod +x /usr/local/bin/download-monthly.sh /usr/local/bin/entrypoint.sh \
+             /usr/local/bin/import-gtfs.sh /usr/local/bin/import-osm.sh
 
 # 7. Environment variable defaults
 ENV POSTGRES_DB=mobility \
     POSTGRES_USER=postgres \
     POSTGRES_PASSWORD=postgres \
-    GTFS_URL="https://www2.anm.it/infoclick/infoclick.php?palina=3010" \
+    GTFS_URL="https://www.anm.it/google/google-transit.zip" \
+    GTFS_SCHEMA=gtfs_anm \
+    GTFS_DATASET_KEY=anm \
+    GTFS_OPERATOR_ID=ANM \
+    GTFS_OPERATOR_NAME="Azienda Napoletana Mobilità" \
+    GTFS_DATASETS=eav:gtfs_eav,anm:gtfs_anm \
+    OTP_REBUILD_ENABLED=true \
+    OTP_REBUILD_REQUEST_DIR=/data/otp-rebuild \
     PBF_URL="https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf" \
     RUN_ON_STARTUP=true \
     AUTO_IMPORT_GTFS=true

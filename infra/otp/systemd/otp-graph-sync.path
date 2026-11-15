@@ -1,0 +1,10 @@
+[Unit]
+Description=Osserva le richieste di ricostruzione grafo OTP
+
+[Path]
+PathExists=/home/r0x4n/hackaton2026CDS/data/otp-rebuild/request.json
+PathChanged=/home/r0x4n/hackaton2026CDS/data/otp-rebuild/request.json
+Unit=otp-graph-sync.service
+
+[Install]
+WantedBy=default.target

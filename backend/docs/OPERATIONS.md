@@ -12,8 +12,15 @@ Configurazione, errori, degradazione, comandi. Tutto cio' che serve per eseguire
 | `APP_CONFIG_DIR` | `backend/app/services/orchestrator` | dove stanno `rules.yaml` e `relevance.yaml` |
 | `DATABASE_URL` | vuoto | richiesto solo con profilo `postgres` |
 | `SQLITE_PATH` | `.data/app.db` | richiesto solo con profilo `sqlite` |
-| `OTP_BASE_URL` | `http://localhost:8080` | endpoint GraphQL di OpenTripPlanner |
+| `GTFS_SCHEMA` | `gtfs_eav` | schema GTFS singolo (fallback se `GTFS_DATASETS` è vuoto); vuoto = tabelle applicative |
+| `GTFS_DATASET_KEY` | `eav` | chiave del dataset singolo in `gtfs_datasets` |
+| `GTFS_DATASETS` | `eav:gtfs_eav,anm:gtfs_anm` | feed multipli `key:schema,key:schema`; EAV e ANM restano entrambi visibili |
+| `OSM_SCHEMA` | `osm_territory` | schema PostgreSQL del catalogo OSM/PostGIS |
+| `OSM_DATASET_KEY` | `osm_napoli` | chiave del dataset in `osm_datasets` |
+| `OTP_BASE_URL` | `http://localhost:8080` | base URL di OpenTripPlanner; il client usa `/otp/gtfs/v1` |
 | `OTP_TIMEOUT_S` | `5` | timeout della query, in secondi |
+| `ROUTING_MODE` | `real` | `real` o `demo`; `demo` usa il fixture marcato simulato, `real` non ammette fallback |
+| `ROUTING_TIMEZONE` | `Europe/Rome` | timezone per data/ora e itinerari |
 | `RT_BASE_URL` | `https://proxy.busone.app/anm` | namespace del proxy GTFS-Realtime |
 | `RT_CLIENT_HEADER` | vuoto | valore di `X-BusOne-Client`, obbligatorio per l'uso continuativo |
 | `RT_USE_HEADER` | `nonprofit` | valore di `X-BusOne-Use` |
@@ -27,6 +34,20 @@ Configurazione, errori, degradazione, comandi. Tutto cio' che serve per eseguire
 | `CORS_ORIGINS` | `http://localhost:3000` | origin ammessi dal frontend, lista separata da virgole |
 
 Nessun valore e' hardcoded nel codice. Ogni variabile ha un default che permette l'avvio senza configurazione.
+
+`APP_PROFILE` descrive solo la persistenza (`memory`, `sqlite`, `postgres`) e
+non decide se simulare il routing. La modalità di routing è indipendente:
+`ROUTING_MODE=real` è il default; `ROUTING_MODE=demo` usa il fixture locale e
+marca ogni risultato come simulato. Un errore OTP in modalità reale produce un
+errore esplicito, mai un itinerario fittizio.
+
+Il client OTP valida le coordinate prima della rete (finite, lat `[-90, 90]`,
+lon `[-180, 180]`) e richiede, per un itinerario reale, almeno un leg con tempi
+scheduled interpretabili, estremi `from`/`to` validi e, per i leg transit,
+route/trip/stop ID. La durata deve essere valida o calcolabile dai tempi; campi
+accessori come nomi, estimated, geometria e walkTime possono mancare. Risposte
+incomplete o incoerenti producono `OtpInvalidResponseError`, senza clamp o
+durate inventate.
 
 ## 2. File di configurazione
 
@@ -187,6 +208,40 @@ python -m app.cli db migrate
 python -m app.cli db seed
 python -m app.cli db reset
 ```
+
+`db seed` è il percorso demo e scrive il seed curato nelle tabelle `public`.
+La rete reale va importata separatamente, in uno schema dedicato:
+
+```
+infra/postgres/import-gtfs.sh --zip /path/to/feed.gtfs.zip \
+  --dataset-key eav --schema gtfs_eav --publish
+```
+
+L'import usa staging, confronta i conteggi con i CSV, registra hash/versione/
+operatore in `gtfs_imports` e `gtfs_datasets`, poi pubblica atomicamente. Lo
+schema precedente resta come `gtfs_eav_prev_<timestamp>`; nessuna tabella
+applicativa viene troncata.
+
+Il catalogo OSM/PostGIS si importa in uno schema separato:
+
+```bash
+infra/postgres/import-osm.sh --pbf /path/to/extract.osm.pbf \
+  --snapshot sud-261113 --osm-timestamp 2026-11-14T01:23:15Z \
+  --expected-sha256 <sha256> --publish
+```
+
+`osm2pgsql` scrive in staging; la pubblicazione aggiorna per `osm_key` le
+tabelle stabili `osm_territory.osm_ways` e `osm_territory.pois`, conserva le
+righe non più presenti con `is_current=false` e non rinomina lo schema. Il
+catalogo non costruisce una topologia e non sostituisce OTP.
+
+Le perturbazioni usano `public.service_alerts` (migrazione 004) e il
+repository `DisruptionRepository`; i collegamenti stanno in
+`public.service_alert_links` con FK verso il catalogo stabile
+`public.reference_entities`. Il catalogo viene sincronizzato dagli import
+GTFS/OSM e non cancella gli oggetti usciti dal dataset. Il repository espone
+`upsert`, `get`, `resolve`, `cancel` e `find_applicable`, ma non è ancora
+collegato a endpoint HTTP né a matching automatico.
 
 ### 5.5 Demo
 

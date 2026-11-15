@@ -25,7 +25,7 @@ Le tabelle 2.1-2.8 sono nominate dalla traccia. Le tabelle 2.9-2.10 sono aggiunt
 |---|---|---|---|
 | `stop_id` | text | chiave primaria | identificatore GTFS |
 | `stop_name` | text | not null | |
-| `zone_id` | text | not null, indice | zona operativa, vedi 3.1 |
+| `zone_id` | text | nullable, indice | zona operativa, vedi 3.1; `NULL` = non ancora classificata |
 | `geometry` | geography(Point,4326) | not null | posizione della fermata |
 | `source_id` | text | not null | ANM o EAV |
 | `data_reference` | text | not null | |
@@ -190,6 +190,107 @@ Non dichiarata dalla traccia. Necessaria per ritardi, soppressioni e fermate sal
 Chiave naturale per upsert: `(trip_id, stop_id, observed_at)`.
 
 Nota: `schedule_relationship = no_data` non significa "in orario". Un passaggio senza riscontro resta senza dato, e l'agente lo tratta come assenza, non come zero ritardo.
+
+### 2.11 Rete GTFS autorevole
+
+La rete statica importata da `gtfs-via-postgres` **non** vive in `public`.
+Ogni dataset ha uno schema dedicato (es. `gtfs_eav`) con le tabelle originali
+`agency`, `routes`, `trips`, `stops`, `stop_times`, `calendar`,
+`calendar_dates`, `shapes`, le viste `service_days`, `arrivals_departures`,
+`connections`, `shapes_aggregated` e le funzioni di metadati dell'import.
+I repository leggono direttamente questo schema; non esiste una copia
+alimentata dal seed demo.
+
+Le tabelle applicative `stops`, `routes`, `trips`, `stop_times` in `public`
+restano per il percorso demo e per eventuali classificazioni/estensioni
+applicative. Non vengono popolate automaticamente dall'import GTFS.
+
+Metadati di importazione (schema `public`):
+
+| Tabella | Contenuto |
+|---|---|
+| `gtfs_imports` | una riga per tentativo: fonte, hash SHA-256, versione dataset, schema di staging/destinazione, operatore, stato, conteggi |
+| `gtfs_datasets` | dataset pubblicato e attivo: stessa provenienza/hash/versione, schema GTFS, intervallo servizio, conteggi |
+
+I dataset convivono in schemi dedicati (`gtfs_eav`, `gtfs_anm`) e restano
+entrambi attivi in `gtfs_datasets`. Il repository multi-dataset espone gli ID
+come `dataset_key:gtfs_id` (`eav:6238`, `anm:6238`) e conserva l'ID originale
+in `gtfs_stop_id`/`gtfs_route_id`/`gtfs_trip_id`.
+
+Il prefisso OTP `feedId:` non è persistito come parte degli ID GTFS: viene
+letto dal grafo OTP in esecuzione. Il database conserva gli ID originali
+(`route_id`, `trip_id`, `stop_id`); OTP li espone come `feedId:route_id`, ecc.
+
+### 2.12 Territorio OSM (`osm_territory`)
+
+Il catalogo OSM vive in uno schema dedicato, separato da `public` e
+`gtfs_eav`. Non è un grafo di routing: ogni riga di `osm_ways` è una **way
+OSM**, non un segmento topologico. La costruzione della rete navigabile resta
+compito di OTP.
+
+| Tabella | Contenuto |
+|---|---|
+| `osm_territory.osm_ways` | way con `highway`, nome/ref, tag di accesso, direzione, ponte/tunnel/livello, geometria `LineString` 4326 |
+| `osm_territory.pois` | nodi, way chiuse e relation con categoria POI; geometria originale e `label_point` per la ricerca |
+| `public.osm_imports` | audit delle importazioni: fonte, hash, versione, staging, stato, conteggi |
+| `public.osm_datasets` | dataset pubblicato: snapshot, timestamp, attribuzione ODbL, conteggi |
+
+`osm_key` è la chiave stabile (`node/<id>`, `way/<id>`, `relation/<id>`).
+Il refresh aggiorna le tabelle pubblicate per `osm_key` e marca le righe non
+più presenti con `is_current = FALSE`; non rinomina lo schema e non cancella
+le righe storiche, quindi eventuali FK future restano riferite alle tabelle
+pubblicate e gli identificativi restano ricostruibili.
+
+Indici: GIST su `osm_ways.geom`, `pois.geom` e `pois.label_point`; btree e
+GIN trigram su nome/ref; GIN sui tag JSONB. Le distanze usano `geography`
+(metri), non buffer in gradi.
+
+### 2.13 Perturbazioni persistenti
+
+La fonte autorevole resta `public.service_alerts`, estesa dalla migrazione
+004; non esiste un secondo archivio. Campi aggiunti: `alert_type`, `effect`
+(`block`, `penalize`, `info`), `source_url`, `content_hash`, `published_at`,
+`observed_at`, `timezone`, `lifecycle_status` (`draft`, `active`, `resolved`,
+`cancelled`, `expired`), `verification_status` (`verified`, `unverified`,
+`needs_review`, `stale`), `uncertainty` (`low`, `medium`, `high`),
+`next_review_at`, `recurrence` JSONB, `revision`, `resolved_at`,
+`cancelled_at`, `updated_at`.
+
+`effect`, `lifecycle_status` e `verification_status` sono distinti: la
+severità non è lo stato di risoluzione; una finestra ricorrente non è un
+blocco continuo; `valid_to` nullo richiede `next_review_at` e non significa
+“valido per sempre”.
+
+| Tabella | Ruolo |
+|---|---|
+| `public.reference_entities` | catalogo stabile di route/trip/stop GTFS e way/POI OSM; `is_current=false` conserva gli oggetti usciti dal dataset |
+| `public.service_alert_links` | collegamenti multipli a entità, con direzione, modo, porzione di corsa, `service_date`, stato di risoluzione e raw reference |
+| `public.service_alert_revisions` | storico delle revisioni, con hash e payload JSONB |
+
+Con più feed GTFS l'`entity_key` include il dataset
+(`gtfs:{dataset_key}:{entity_type}:{entity_id}`), così route/trip/stop con lo
+stesso ID originale in EAV e ANM restano entità distinte. La migrazione
+`005_gtfs_reference_namespaces.sql` applica questa forma e converte i
+collegamenti esistenti.
+
+Per risolvere o cercare perturbazioni ANM, il repository usa
+`dataset_key="anm"`; se omesso mantiene il dataset GTFS configurato nel
+repository (EAV per default), senza cercare in altri feed. Anche la verifica
+del calendario di una corsa legge lo schema del dataset richiesto da
+`gtfs_datasets`, non uno schema EAV fisso. Un riferimento non risolto conserva
+il dataset nella propria identità, così due ID mancanti uguali non si fondono.
+
+La migrazione 005 propaga la nuova chiave alle FK e ai riferimenti operativi
+dei link; lo storico JSON delle revisioni rimane immutato. Eventuali link
+legacy con dataset discordante da quello del riferimento sono conservati
+come `unresolved` e richiedono nuova risoluzione, senza assegnazioni arbitrarie.
+
+`service_alert_links.entity_key` ha FK reale verso
+`reference_entities.entity_key`. Un riferimento inesistente resta
+`unresolved` con `raw_reference` e senza FK; un oggetto non più corrente è
+`historical` e mantiene la FK. Dopo un refresh GTFS/OSM le righe non vengono
+cancellate: il catalogo viene marcato `is_current=false` e i collegamenti
+restano leggibili.
 
 ## 3. Tabelle interne
 

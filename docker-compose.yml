@@ -11,8 +11,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-mobility}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      GTFS_URL: ${GTFS_URL:-https://www2.anm.it/infoclick/infoclick.php?palina=3010}
-      GTFS_FALLBACK_URL: ${GTFS_FALLBACK_URL:-https://www.anm.it/google/google-transit.zip}
+      GTFS_URL: ${GTFS_URL:-https://www.anm.it/google/google-transit.zip}
+      GTFS_FALLBACK_URL: ${GTFS_FALLBACK_URL:-}
+      # GTFS_URL is ANM: automatic updates target gtfs_anm. EAV remains in gtfs_eav.
+      GTFS_SCHEMA: ${GTFS_SCHEMA:-gtfs_anm}
+      GTFS_DATASET_KEY: ${GTFS_DATASET_KEY:-anm}
+      GTFS_OPERATOR_ID: ${GTFS_OPERATOR_ID:-ANM}
+      GTFS_OPERATOR_NAME: ${GTFS_OPERATOR_NAME:-Azienda Napoletana Mobilità}
+      GTFS_DATASETS: ${GTFS_DATASETS:-eav:gtfs_eav,anm:gtfs_anm}
+      OTP_REBUILD_ENABLED: ${OTP_REBUILD_ENABLED:-true}
+      OTP_REBUILD_REQUEST_DIR: ${OTP_REBUILD_REQUEST_DIR:-/data/otp-rebuild}
       PBF_URL: ${PBF_URL:-https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf}
       RUN_ON_STARTUP: ${RUN_ON_STARTUP:-true}
       AUTO_IMPORT_GTFS: ${AUTO_IMPORT_GTFS:-true}

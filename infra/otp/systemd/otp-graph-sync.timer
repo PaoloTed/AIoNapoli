@@ -1,0 +1,10 @@
+[Unit]
+Description=Riconcilia periodicamente grafo OTP e metadati GTFS del database
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Unit=otp-graph-sync.service
+
+[Install]
+WantedBy=timers.target

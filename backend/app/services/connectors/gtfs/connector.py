@@ -55,6 +55,12 @@ class GtfsConnector:
         return self._rt.fetch_status()
 
     def run_static(self) -> ConnectorOutcome:
+        """Load the curated demo seed. This is the explicit demo/CLI path.
+
+        The authoritative GTFS network is imported into its own schema by
+        ``infra/postgres/import-gtfs.sh`` and read by the repository; this
+        method must not be used to populate a real profile.
+        """
         started_at = datetime.now(timezone.utc)
         rows_written = self._static.load_from_zones_seed()
         finished_at = datetime.now(timezone.utc)
@@ -66,7 +72,7 @@ class GtfsConnector:
                 "rows_written": rows_written,
                 "is_simulated": False,
                 "outcome": "ok",
-                "detail": "gtfs_static_seed_ok",
+                "detail": "gtfs_static_demo_seed_ok",
             }
         )
         return ConnectorOutcome(
@@ -75,7 +81,7 @@ class GtfsConnector:
             rows_written=rows_written,
             is_simulated=False,
             outcome="ok",
-            detail="gtfs_static_seed_ok",
+            detail="gtfs_static_demo_seed_ok",
         )
 
     def run(self, *, mode: str = "rt", now: datetime | None = None) -> ConnectorOutcome:
@@ -83,9 +89,8 @@ class GtfsConnector:
             return self.run_static()
 
         started_at = now or datetime.now(timezone.utc)
-        # Ensure static foreign keys (routes/stops) exist when writing to SQL repo
-        self._static.load_from_zones_seed()
-
+        # Do not seed demo network here: the real profile must use the GTFS
+        # imported into its authoritative schema, never artificial zones.
         res = self._rt.fetch(now=started_at)
         written = 0
         if res.positions:
@@ -118,7 +123,6 @@ class GtfsConnector:
         self, reason: str = "manual_fallback", now: datetime | None = None
     ) -> ConnectorOutcome:
         started_at = now or datetime.now(timezone.utc)
-        self._static.load_from_zones_seed()
         res = self._rt.fallback_payload(reason=reason, now=started_at)
         written = self._repo.upsert_vehicle_positions(res.positions)
         finished_at = datetime.now(timezone.utc)

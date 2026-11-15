@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.domain.models.decision import PlanTarget, RuleId
 from app.domain.models.finding import Severity
@@ -145,6 +147,8 @@ class AppConfig(BaseModel):
     llm_cache_dir: str = ".cache/llm"
     otp_base_url: str = "http://localhost:8080"
     otp_timeout_s: float = Field(default=5.0, gt=0.0)
+    routing_mode: Literal["real", "demo"] = "real"
+    routing_timezone: str = "Europe/Rome"
     rt_base_url: str = "https://proxy.busone.app/anm"
     rt_client_header: str = ""
     rt_use_header: str = "nonprofit"
@@ -153,5 +157,48 @@ class AppConfig(BaseModel):
     http_timeout_s: float = Field(default=10.0, gt=0.0)
     sqlite_path: str = ".data/app.db"
     database_url: str = ""
+    gtfs_schema: str = "gtfs_eav"
+    gtfs_dataset_key: str = Field(default="eav", min_length=1)
+    gtfs_datasets: dict[str, str] = Field(
+        default_factory=lambda: {"eav": "gtfs_eav", "anm": "gtfs_anm"}
+    )
+    osm_schema: str = "osm_territory"
+    osm_dataset_key: str = Field(default="osm_napoli", min_length=1)
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     log_level: str = "info"
+
+    @field_validator("gtfs_schema", "osm_schema")
+    @classmethod
+    def _valid_sql_schema(cls, value: str) -> str:
+        if value and not re.fullmatch(r"[a-z_][a-z0-9_]*", value):
+            raise ValueError("schema deve essere un identificatore SQL minuscolo")
+        return value
+
+    @field_validator("gtfs_datasets")
+    @classmethod
+    def _valid_gtfs_datasets(cls, value: dict[str, str]) -> dict[str, str]:
+        schemas: set[str] = set()
+        for key, schema in value.items():
+            if not re.fullmatch(r"[a-z0-9_]+", key):
+                raise ValueError(f"chiave dataset GTFS non valida: {key!r}")
+            if not re.fullmatch(r"[a-z_][a-z0-9_]*", schema):
+                raise ValueError(f"schema GTFS non valido: {schema!r}")
+            if schema in schemas:
+                raise ValueError(f"schema GTFS duplicato: {schema!r}")
+            schemas.add(schema)
+        return value
+
+    def gtfs_dataset_pairs(self) -> list[tuple[str, str]]:
+        """Configured feeds; the legacy single-schema values remain a valid fallback."""
+        if self.gtfs_datasets:
+            return list(self.gtfs_datasets.items())
+        return [(self.gtfs_dataset_key, self.gtfs_schema)]
+
+    @field_validator("routing_timezone")
+    @classmethod
+    def _valid_routing_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"routing_timezone sconosciuta: {value}") from exc
+        return value

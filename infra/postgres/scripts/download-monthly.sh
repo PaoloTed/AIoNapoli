@@ -24,11 +24,19 @@ echo "[$(LOG_TIME)] ==================================================="
 
 # Configurations & Defaults
 DATA_DIR="${DATA_DIR:-/data}"
-GTFS_URL="${GTFS_URL:-https://www2.anm.it/infoclick/infoclick.php?palina=3010}"
+# GTFS_URL must point to a ZIP archive, never to the Infoclick HTML page.
+GTFS_URL="${GTFS_URL:-https://www.anm.it/google/google-transit.zip}"
 PBF_URL="${PBF_URL:-https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf}"
-GTFS_FALLBACK_URL="${GTFS_FALLBACK_URL:-https://www.anm.it/google/google-transit.zip}"
+GTFS_FALLBACK_URL="${GTFS_FALLBACK_URL:-}"
 AUTO_IMPORT_GTFS="${AUTO_IMPORT_GTFS:-true}"
 SKIP_PBF_DOWNLOAD="${SKIP_PBF_DOWNLOAD:-false}"
+GTFS_SCHEMA="${GTFS_SCHEMA:-gtfs_anm}"
+GTFS_DATASET_KEY="${GTFS_DATASET_KEY:-anm}"
+GTFS_OPERATOR_ID="${GTFS_OPERATOR_ID:-ANM}"
+GTFS_OPERATOR_NAME="${GTFS_OPERATOR_NAME:-Azienda Napoletana Mobilità}"
+OTP_REBUILD_ENABLED="${OTP_REBUILD_ENABLED:-true}"
+OTP_REBUILD_REQUEST_DIR="${OTP_REBUILD_REQUEST_DIR:-/data/otp-rebuild}"
+SYNC_ERROR=0
 
 POSTGRES_DB="${POSTGRES_DB:-mobility}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
@@ -39,9 +47,11 @@ PGPORT="${PGPORT:-5432}"
 DATE_TAG="$(date +%Y%m%d)"
 OSM_DIR="$DATA_DIR/osm"
 GTFS_DIR="$DATA_DIR/gtfs"
-GTFS_CURRENT="$GTFS_DIR/current"
+mkdir -p "$OSM_DIR" "$GTFS_DIR"
 
-mkdir -p "$OSM_DIR" "$GTFS_DIR" "$GTFS_CURRENT"
+PBF_TARGET="$OSM_DIR/sud-latest.osm.pbf"
+PBF_ARCHIVE="$OSM_DIR/sud-${DATE_TAG}.osm.pbf"
+PBF_TMP="$OSM_DIR/sud-download.tmp"
 
 # -----------------------------------------------------------------------------
 # 1. Download OpenStreetMap PBF (Geofabrik)
@@ -65,9 +75,6 @@ elif [ -s "$PBF_TARGET" ] && [ "${FORCE_DOWNLOAD:-false}" != "true" ]; then
     fi
 else
     echo "[$(LOG_TIME)] [OSM] Downloading Southern Italy PBF from: $PBF_URL"
-    PBF_TARGET="$OSM_DIR/sud-latest.osm.pbf"
-    PBF_ARCHIVE="$OSM_DIR/sud-${DATE_TAG}.osm.pbf"
-    PBF_TMP="$OSM_DIR/sud-download.tmp"
 
     # Use curl with:
     # -f (fail on HTTP error)
@@ -95,7 +102,7 @@ GTFS_TMP="$GTFS_DIR/gtfs-download.tmp"
 
 IS_VALID_ZIP=false
 
-if curl -fSL -k -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "$GTFS_URL"; then
+if curl -fSL -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "$GTFS_URL"; then
     mv "$GTFS_TMP" "$GTFS_DOWNLOAD"
     DOWNLOAD_SIZE="$(du -h "$GTFS_DOWNLOAD" | cut -f1)"
     echo "[$(LOG_TIME)] [GTFS] Downloaded $DOWNLOAD_SIZE from $GTFS_URL"
@@ -117,7 +124,7 @@ if curl -fSL -k -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "
         # Check if a fallback GTFS archive URL was provided
         if [ -n "$GTFS_FALLBACK_URL" ]; then
             echo "[$(LOG_TIME)] [GTFS] Trying fallback GTFS archive URL: $GTFS_FALLBACK_URL"
-            if curl -fSL -k -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "$GTFS_FALLBACK_URL"; then
+            if curl -fSL -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "$GTFS_FALLBACK_URL"; then
                 if unzip -tq "$GTFS_TMP" >/dev/null 2>&1; then
                     mv "$GTFS_TMP" "$GTFS_LATEST_ZIP"
                     IS_VALID_ZIP=true
@@ -131,35 +138,83 @@ if curl -fSL -k -A "Mozilla/5.0" --retry 3 --connect-timeout 30 -o "$GTFS_TMP" "
     fi
 
     # -----------------------------------------------------------------------------
-    # 3. Extract and Ingest via gtfs-via-postgres (gtfs-to-sql)
+    # 3. Controlled import into the dedicated GTFS schema
     # -----------------------------------------------------------------------------
     if [ "$IS_VALID_ZIP" = "true" ]; then
-        echo "[$(LOG_TIME)] [GTFS] Extracting $GTFS_LATEST_ZIP into $GTFS_CURRENT..."
-        rm -rf "${GTFS_CURRENT:?}"/*
-        unzip -o -q "$GTFS_LATEST_ZIP" -d "$GTFS_CURRENT"
-
         if [ "$AUTO_IMPORT_GTFS" = "true" ]; then
-            if compgen -G "$GTFS_CURRENT/*.txt" > /dev/null; then
-                echo "[$(LOG_TIME)] [GTFS] Found GTFS specification files (.txt). Starting gtfs-via-postgres import..."
-                export PGPASSWORD="$POSTGRES_PASSWORD"
+            export PGPASSWORD="$POSTGRES_PASSWORD"
+            export PGUSER="$POSTGRES_USER"
+            export PGDATABASE="$POSTGRES_DB"
 
-                # Wait if Postgres is still starting up
-                for _ in {1..30}; do
-                    if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" >/dev/null 2>&1; then
-                        break
-                    fi
-                    sleep 1
-                done
+            # Wait if Postgres is still starting up
+            for _ in {1..30}; do
+                if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" >/dev/null 2>&1; then
+                    break
+                fi
+                sleep 1
+            done
 
-                # Import using gtfs-to-sql piped into psql
-                echo "[$(LOG_TIME)] [GTFS] Running: gtfs-to-sql --ignore-unsupported --trips-without-shape-id --stops-location-index $GTFS_CURRENT/*.txt | psql -h $PGHOST -p $PGPORT -U $POSTGRES_USER -d $POSTGRES_DB -b"
-                if gtfs-to-sql --ignore-unsupported --trips-without-shape-id --stops-location-index "$GTFS_CURRENT"/*.txt | psql -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -b; then
-                    echo "[$(LOG_TIME)] [GTFS] gtfs-via-postgres import completed successfully into database '$POSTGRES_DB'!"
+            IMPORT_SCRIPT="${GTFS_IMPORT_SCRIPT:-/usr/local/bin/import-gtfs.sh}"
+            if [ ! -x "$IMPORT_SCRIPT" ]; then
+                IMPORT_SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/import-gtfs.sh"
+            fi
+
+            echo "[$(LOG_TIME)] [GTFS] Starting controlled import: $GTFS_LATEST_ZIP -> $GTFS_SCHEMA"
+            if bash "$IMPORT_SCRIPT" \
+                --zip "$GTFS_LATEST_ZIP" \
+                --dataset-key "$GTFS_DATASET_KEY" \
+                --schema "$GTFS_SCHEMA" \
+                --operator-id "$GTFS_OPERATOR_ID" \
+                --operator-name "$GTFS_OPERATOR_NAME" \
+                --source-url "$GTFS_URL" \
+                --publish; then
+                echo "[$(LOG_TIME)] [GTFS] import completed into schema '$GTFS_SCHEMA'."
+
+                SOURCE_SHA256="$(sha256sum "$GTFS_LATEST_ZIP" | awk '{print $1}')"
+                DB_ROW="$(
+                    psql -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                        -X -t -A -F '|' -c \
+                        "SELECT source_sha256, gtfs_schema, COALESCE(service_start::text, ''), COALESCE(service_end::text, '')
+                         FROM public.gtfs_datasets
+                         WHERE dataset_key = '$GTFS_DATASET_KEY' AND is_active
+                         ORDER BY published_at DESC LIMIT 1;"
+                )"
+                IFS='|' read -r DB_SHA256 DB_SCHEMA DB_SERVICE_START DB_SERVICE_END <<<"$DB_ROW"
+                DB_IMPORT_ID="$(
+                    psql -h "$PGHOST" -p "$PGPORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                        -X -t -A -c \
+                        "SELECT import_id FROM public.gtfs_imports
+                         WHERE dataset_key = '$GTFS_DATASET_KEY' AND status = 'published'
+                         ORDER BY import_id DESC LIMIT 1;"
+                )"
+                if [ -z "$DB_SHA256" ] || [ "$DB_SHA256" != "$SOURCE_SHA256" ] || [ "$DB_SCHEMA" != "$GTFS_SCHEMA" ]; then
+                    echo "[$(LOG_TIME)] [GTFS ERROR] pubblicazione DB non coerente: file=$SOURCE_SHA256 db=${DB_SHA256:-assente} schema=${DB_SCHEMA:-assente}." >&2
+                    SYNC_ERROR=1
+                elif [ "$OTP_REBUILD_ENABLED" = "true" ]; then
+                    mkdir -p "$OTP_REBUILD_REQUEST_DIR"
+                    chmod 0777 "$OTP_REBUILD_REQUEST_DIR" 2>/dev/null || true
+                    REQUEST_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+                    REQUEST_TMP="$OTP_REBUILD_REQUEST_DIR/.request-${REQUEST_ID}.tmp"
+                    cat > "$REQUEST_TMP" <<EOF
+{
+  "request_id": "${REQUEST_ID}",
+  "requested_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "dataset_key": "${GTFS_DATASET_KEY}",
+  "gtfs_schema": "${DB_SCHEMA}",
+  "zip_path": "${GTFS_LATEST_ZIP}",
+  "source_sha256": "${SOURCE_SHA256}",
+  "service_start": "${DB_SERVICE_START}",
+  "service_end": "${DB_SERVICE_END}",
+  "import_id": "${DB_IMPORT_ID}"
+}
+EOF
+                    mv -f "$REQUEST_TMP" "$OTP_REBUILD_REQUEST_DIR/request.json"
+                    echo "[$(LOG_TIME)] [OTP] richiesta di ricostruzione grafo scritta in $OTP_REBUILD_REQUEST_DIR/request.json (richiesta $REQUEST_ID)."
                 else
-                    echo "[$(LOG_TIME)] [GTFS ERROR] gtfs-to-sql pipeline encountered an error during import." >&2
+                    echo "[$(LOG_TIME)] [OTP] OTP_REBUILD_ENABLED=false: grafo non ricostruito."
                 fi
             else
-                echo "[$(LOG_TIME)] [GTFS WARNING] No .txt files found inside the unzipped GTFS archive."
+                echo "[$(LOG_TIME)] [GTFS ERROR] controlled import failed." >&2
             fi
         else
             echo "[$(LOG_TIME)] [GTFS] AUTO_IMPORT_GTFS is false. Skipping automated database import."
@@ -176,3 +231,4 @@ fi
 echo "[$(LOG_TIME)] ==================================================="
 echo "[$(LOG_TIME)] Monthly download task finished."
 echo "[$(LOG_TIME)] ==================================================="
+exit "$SYNC_ERROR"

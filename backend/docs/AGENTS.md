@@ -19,6 +19,9 @@ is_simulated, timestamp.
   simulazione dichiarata.
 - Rifiuto: real-time richiesto per una linea non coperta dal feed, senza
   simulazione dichiarata.
+- Rifiuto: OTP non restituisce itinerari (`no_route`), va in timeout
+  (`otp_timeout`), non è raggiungibile (`otp_unavailable`) o restituisce un
+  errore HTTP/GraphQL/risposta invalida (`otp_error`).
 
 ## Agente Affollamento
 

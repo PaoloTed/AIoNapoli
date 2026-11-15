@@ -32,7 +32,7 @@ def test_max_age() -> None:
                 lambda req: (_ for _ in ()).throw(httpx.ConnectError("offline", request=req))
             )
         )
-        otp = OtpClient(base_url="http://127.0.0.1:59999", http_client=offline_http)
+        otp = OtpClient(base_url="http://127.0.0.1:59999", http_client=offline_http, mode="demo")
 
         for repo in (mem_repo, sql_repo):
             GtfsConnector(repo, http_client=offline_http).run_static()

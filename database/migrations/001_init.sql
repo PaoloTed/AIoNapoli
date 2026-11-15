@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS zones (
 CREATE TABLE IF NOT EXISTS stops (
     stop_id TEXT PRIMARY KEY,
     stop_name TEXT NOT NULL,
-    zone_id TEXT NOT NULL,
+    -- Le fermate GTFS reali possono non essere ancora classificate in una
+    -- zona operativa: NULL significa "non classificata", non "zona inventata".
+    zone_id TEXT,
     geometry GEOGRAPHY(Point, 4326) NOT NULL,
     source_id TEXT NOT NULL,
     data_reference TEXT NOT NULL,

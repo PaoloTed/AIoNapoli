@@ -1,0 +1,237 @@
+{
+  "data": {
+    "planConnection": {
+      "edges": [
+        {
+          "node": {
+            "start": "2026-11-16T08:12:30+01:00",
+            "end": "2026-11-16T08:47:30+01:00",
+            "duration": 2100,
+            "walkTime": 0,
+            "walkDistance": 0.0,
+            "numberOfTransfers": 0,
+            "generalizedCost": 2704,
+            "legs": [
+              {
+                "mode": "RAIL",
+                "transitLeg": true,
+                "duration": 2100.0,
+                "start": {
+                  "scheduledTime": "2026-11-16T08:12:30+01:00",
+                  "estimated": null
+                },
+                "end": {
+                  "scheduledTime": "2026-11-16T08:47:30+01:00",
+                  "estimated": null
+                },
+                "route": {
+                  "gtfsId": "1:4",
+                  "shortName": "4",
+                  "longName": "Napoli - Scafati - Poggiomarino",
+                  "mode": "RAIL"
+                },
+                "trip": {
+                  "gtfsId": "1:4081_opttp2026-2030-7"
+                },
+                "from": {
+                  "name": "Napoli P. Garibaldi",
+                  "lat": 40.851017,
+                  "lon": 14.272976,
+                  "stop": {
+                    "gtfsId": "1:6003",
+                    "name": "Napoli P. Garibaldi"
+                  }
+                },
+                "to": {
+                  "name": "Torre Annunziata - Oplonti",
+                  "lat": 40.759526,
+                  "lon": 14.451518,
+                  "stop": {
+                    "gtfsId": "1:6041",
+                    "name": "Torre Annunziata - Oplonti"
+                  }
+                },
+                "legGeometry": {
+                  "points": "yuixFaubvAx^gxAhYsoAiMcwA|VwqA~m@{~@j}@ea@rc@mQjp@uu@pi@kg@fw@qt@jv@uwAtd@sr@rd@ecBle@sx@pYmhCdMmiA",
+                  "length": 17
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": {
+            "start": "2026-11-16T08:22:30+01:00",
+            "end": "2026-11-16T08:58:00+01:00",
+            "duration": 2130,
+            "walkTime": 0,
+            "walkDistance": 0.0,
+            "numberOfTransfers": 0,
+            "generalizedCost": 2734,
+            "legs": [
+              {
+                "mode": "RAIL",
+                "transitLeg": true,
+                "duration": 2130.0,
+                "start": {
+                  "scheduledTime": "2026-11-16T08:22:30+01:00",
+                  "estimated": null
+                },
+                "end": {
+                  "scheduledTime": "2026-11-16T08:58:00+01:00",
+                  "estimated": null
+                },
+                "route": {
+                  "gtfsId": "1:1.",
+                  "shortName": "1.",
+                  "longName": "Napoli - Torre Annunziata",
+                  "mode": "RAIL"
+                },
+                "trip": {
+                  "gtfsId": "1:10819_opttp2026-2030-18"
+                },
+                "from": {
+                  "name": "Napoli P. Garibaldi",
+                  "lat": 40.851017,
+                  "lon": 14.272976,
+                  "stop": {
+                    "gtfsId": "1:6003",
+                    "name": "Napoli P. Garibaldi"
+                  }
+                },
+                "to": {
+                  "name": "Torre Annunziata - Oplonti",
+                  "lat": 40.759526,
+                  "lon": 14.451518,
+                  "stop": {
+                    "gtfsId": "1:6041",
+                    "name": "Torre Annunziata - Oplonti"
+                  }
+                },
+                "legGeometry": {
+                  "points": "yuixFaubvAx^gxAhYsoAiMcwA|VwqA~m@{~@j}@ea@rc@mQjp@uu@pi@kg@fw@qt@jv@uwAtd@sr@rd@ecBle@sx@pYmhCdMmiA",
+                  "length": 17
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": {
+            "start": "2026-11-16T08:42:30+01:00",
+            "end": "2026-11-16T09:17:30+01:00",
+            "duration": 2100,
+            "walkTime": 0,
+            "walkDistance": 0.0,
+            "numberOfTransfers": 0,
+            "generalizedCost": 2704,
+            "legs": [
+              {
+                "mode": "RAIL",
+                "transitLeg": true,
+                "duration": 2100.0,
+                "start": {
+                  "scheduledTime": "2026-11-16T08:42:30+01:00",
+                  "estimated": null
+                },
+                "end": {
+                  "scheduledTime": "2026-11-16T09:17:30+01:00",
+                  "estimated": null
+                },
+                "route": {
+                  "gtfsId": "1:4",
+                  "shortName": "4",
+                  "longName": "Napoli - Scafati - Poggiomarino",
+                  "mode": "RAIL"
+                },
+                "trip": {
+                  "gtfsId": "1:4083_opttp2026-2030-7"
+                },
+                "from": {
+                  "name": "Napoli P. Garibaldi",
+                  "lat": 40.851017,
+                  "lon": 14.272976,
+                  "stop": {
+                    "gtfsId": "1:6003",
+                    "name": "Napoli P. Garibaldi"
+                  }
+                },
+                "to": {
+                  "name": "Torre Annunziata - Oplonti",
+                  "lat": 40.759526,
+                  "lon": 14.451518,
+                  "stop": {
+                    "gtfsId": "1:6041",
+                    "name": "Torre Annunziata - Oplonti"
+                  }
+                },
+                "legGeometry": {
+                  "points": "yuixFaubvAx^gxAhYsoAiMcwA|VwqA~m@{~@j}@ea@rc@mQjp@uu@pi@kg@fw@qt@jv@uwAtd@sr@rd@ecBle@sx@pYmhCdMmiA",
+                  "length": 17
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": {
+            "start": "2026-11-16T08:52:30+01:00",
+            "end": "2026-11-16T09:28:00+01:00",
+            "duration": 2130,
+            "walkTime": 0,
+            "walkDistance": 0.0,
+            "numberOfTransfers": 0,
+            "generalizedCost": 2734,
+            "legs": [
+              {
+                "mode": "RAIL",
+                "transitLeg": true,
+                "duration": 2130.0,
+                "start": {
+                  "scheduledTime": "2026-11-16T08:52:30+01:00",
+                  "estimated": null
+                },
+                "end": {
+                  "scheduledTime": "2026-11-16T09:28:00+01:00",
+                  "estimated": null
+                },
+                "route": {
+                  "gtfsId": "1:1.",
+                  "shortName": "1.",
+                  "longName": "Napoli - Torre Annunziata",
+                  "mode": "RAIL"
+                },
+                "trip": {
+                  "gtfsId": "1:10849_opttp2026-2030-18"
+                },
+                "from": {
+                  "name": "Napoli P. Garibaldi",
+                  "lat": 40.851017,
+                  "lon": 14.272976,
+                  "stop": {
+                    "gtfsId": "1:6003",
+                    "name": "Napoli P. Garibaldi"
+                  }
+                },
+                "to": {
+                  "name": "Torre Annunziata - Oplonti",
+                  "lat": 40.759526,
+                  "lon": 14.451518,
+                  "stop": {
+                    "gtfsId": "1:6041",
+                    "name": "Torre Annunziata - Oplonti"
+                  }
+                },
+                "legGeometry": {
+                  "points": "yuixFaubvAx^gxAhYsoAiMcwA|VwqA~m@{~@j}@ea@rc@mQjp@uu@pi@kg@fw@qt@jv@uwAtd@sr@rd@ecBle@sx@pYmhCdMmiA",
+                  "length": 17
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "routingErrors": []
+    }
+  }
+}

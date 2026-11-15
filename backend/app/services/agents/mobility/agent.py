@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
 
+from app.domain.models.config import AppConfig
 from app.domain.models.finding import AgentName, Finding, FindingType, Severity
 from app.domain.models.refusal import Refusal
 from app.repositories.base import SourceRepository
 from app.services.agents.mobility.itineraries import format_legs_summary, parse_point_wkt
-from app.services.agents.mobility.otp_client import OtpClient
+from app.services.agents.mobility.otp_client import (
+    DEFAULT_MODES,
+    OtpClient,
+    OtpGraphQLError,
+    OtpHttpError,
+    OtpInvalidResponseError,
+    OtpNoRouteError,
+    OtpTimeoutError,
+    OtpUnavailableError,
+)
 
 
 class MobilityAgent:
@@ -19,10 +30,21 @@ class MobilityAgent:
         repository: SourceRepository,
         *,
         otp_client: OtpClient | None = None,
+        config: AppConfig | None = None,
         rt_max_age_s: int = 90,
     ) -> None:
         self._repo = repository
-        self._otp = otp_client or OtpClient()
+        if otp_client is not None:
+            self._otp = otp_client
+        elif config is not None:
+            self._otp = OtpClient(
+                base_url=config.otp_base_url,
+                timeout_s=config.otp_timeout_s,
+                mode=config.routing_mode,
+                timezone=config.routing_timezone,
+            )
+        else:
+            self._otp = OtpClient()
         self._rt_max_age_s = rt_max_age_s
 
     def evaluate(
@@ -35,6 +57,7 @@ class MobilityAgent:
         horizon_hours: float | None = None,
         allow_simulation: bool = True,
         require_realtime: bool = False,
+        exclude_route_ids: Sequence[str] = (),
         now: datetime | None = None,
     ) -> Finding | Refusal:
         ref_now = now or datetime.now(timezone.utc)
@@ -98,21 +121,79 @@ class MobilityAgent:
 
         origin_stop = stops_by_id.get(origin_stop_id) if origin_stop_id else None
         dest_stop = stops_by_id.get(destination_stop_id) if destination_stop_id else None
-        from_coords = parse_point_wkt(origin_stop.get("geometry") if origin_stop else None) or (
-            40.8522,
-            14.2724,
-        )
-        to_coords = parse_point_wkt(dest_stop.get("geometry") if dest_stop else None) or (
-            40.8165,
-            14.1672,
-        )
+        from_coords = parse_point_wkt(origin_stop.get("geometry") if origin_stop else None)
+        to_coords = parse_point_wkt(dest_stop.get("geometry") if dest_stop else None)
 
-        itinerary = self._otp.plan_itinerary(
-            from_lat=from_coords[0],
-            from_lon=from_coords[1],
-            to_lat=to_coords[0],
-            to_lon=to_coords[1],
-        )
+        if origin_stop_id is not None and from_coords is None:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="unmapped_point",
+                missing_input=[f"origin_geometry:{origin_stop_id}"],
+                detail=f"Origine '{origin_stop_id}' senza coordinate utilizzabili",
+            )
+        if destination_stop_id is not None and to_coords is None:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="unmapped_point",
+                missing_input=[f"destination_geometry:{destination_stop_id}"],
+                detail=f"Destinazione '{destination_stop_id}' senza coordinate utilizzabili",
+            )
+
+        # A real routing request must never invent coordinates. Demo mode uses
+        # the recorded fixture and is the only path allowed to omit them.
+        if from_coords is None or to_coords is None:
+            if self._otp.mode != "demo":
+                missing = "origin_coordinates" if from_coords is None else "destination_coordinates"
+                return Refusal(
+                    agent=AgentName.MOBILITY,
+                    reason_code="unmapped_point",
+                    missing_input=[missing],
+                    detail="Coordinate di origine/destinazione mancanti per il routing reale",
+                )
+            from_coords = from_coords or (40.8522, 14.2724)
+            to_coords = to_coords or (40.8165, 14.1672)
+
+        try:
+            plan = self._otp.plan_itineraries(
+                from_lat=from_coords[0],
+                from_lon=from_coords[1],
+                to_lat=to_coords[0],
+                to_lon=to_coords[1],
+                depart_at=ref_now,
+                first=5,
+                modes=DEFAULT_MODES,
+                exclude_route_ids=exclude_route_ids,
+            )
+        except OtpNoRouteError as exc:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="no_route",
+                missing_input=["otp_itineraries"],
+                detail=str(exc),
+            )
+        except OtpTimeoutError as exc:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="otp_timeout",
+                missing_input=["otp"],
+                detail=str(exc),
+            )
+        except OtpUnavailableError as exc:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="otp_unavailable",
+                missing_input=["otp"],
+                detail=str(exc),
+            )
+        except (OtpHttpError, OtpGraphQLError, OtpInvalidResponseError) as exc:
+            return Refusal(
+                agent=AgentName.MOBILITY,
+                reason_code="otp_error",
+                missing_input=["otp"],
+                detail=str(exc),
+            )
+
+        itinerary = plan.itineraries[0]
 
         # Derive congestion and severity from active alerts and trip updates
         matching_alerts = [
@@ -148,29 +229,41 @@ class MobilityAgent:
             zone_id
             or (dest_stop.get("zone_id") if dest_stop else None)
             or (matching_alerts[0].get("zone_id") if matching_alerts else None)
-            or "Z_BAGNOLI"
+        )
+        first_route_id = next(
+            (leg.get("route_id") for leg in itinerary.legs if leg.get("route_id")), None
+        )
+        duration_min = (
+            round(itinerary.duration_s / 60) if itinerary.duration_s is not None else None
         )
 
-        is_simulated = itinerary.is_simulated or any(bool(p.get("is_simulated")) for p in positions)
-        if matching_alerts and not itinerary.is_simulated:
+        is_simulated = plan.is_simulated or any(
+            bool(p.get("is_simulated")) for p in positions
+        )
+        if matching_alerts and not plan.is_simulated:
             source_id = str(matching_alerts[0].get("source_id") or "anm")
-            data_ref = str(matching_alerts[0].get("data_reference") or itinerary.data_reference)
+            data_ref = str(matching_alerts[0].get("data_reference") or plan.data_reference)
+        elif positions and not plan.is_simulated:
+            source_id = str(positions[0].get("source_id") or "anm")
+            data_ref = str(positions[0].get("data_reference") or plan.data_reference)
         else:
-            source_id = "anm"
-            data_ref = (
-                str(positions[0].get("data_reference")) if positions else itinerary.data_reference
-            )
+            source_id = plan.source_id
+            data_ref = plan.data_reference
 
         content = {
             "zone_id": resolved_zone,
             "congestion": round(congestion_val, 2),
-            "line_id": route_id or "L2",
-            "estimated_time_min": itinerary.duration_min,
+            "line_id": route_id or first_route_id or "unknown",
+            "estimated_time_min": duration_min,
+            "duration_s": itinerary.duration_s,
+            "itineraries_count": len(plan.itineraries),
             "recommended_route": format_legs_summary(itinerary.legs),
             "active_vehicles": len(positions),
         }
-        if itinerary.fallback_reason:
-            content["fallback_reason"] = itinerary.fallback_reason
+        if plan.fallback_reason:
+            content["fallback_reason"] = plan.fallback_reason
+        if plan.routing_errors:
+            content["routing_warnings"] = plan.routing_errors
 
         return Finding(
             agent=AgentName.MOBILITY,

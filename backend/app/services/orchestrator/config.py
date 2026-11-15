@@ -81,6 +81,24 @@ def load_relevance_config(config_dir: str | Path | None = None) -> RelevanceConf
         ) from exc
 
 
+def _parse_gtfs_datasets(raw: str) -> dict[str, str]:
+    """Parse ``key:schema,key:schema`` without hiding the legacy single feed."""
+    datasets: dict[str, str] = {}
+    for item in raw.split(","):
+        token = item.strip()
+        if not token:
+            continue
+        if ":" not in token:
+            raise ValueError(f"GTFS_DATASETS non valido: {token!r} (atteso key:schema)")
+        key, schema = (part.strip() for part in token.split(":", 1))
+        if not key or not schema:
+            raise ValueError(f"GTFS_DATASETS non valido: {token!r}")
+        if key in datasets:
+            raise ValueError(f"GTFS_DATASETS contiene la chiave duplicata: {key!r}")
+        datasets[key] = schema
+    return datasets
+
+
 def load_config(config_dir: str | Path | None = None) -> AppConfig:
     """Load and validate full application configuration from YAML + env."""
     rules = load_rules_config(config_dir)
@@ -101,6 +119,8 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
             llm_cache_dir=os.environ.get("LLM_CACHE_DIR", ".cache/llm"),
             otp_base_url=os.environ.get("OTP_BASE_URL", "http://localhost:8080"),
             otp_timeout_s=float(os.environ.get("OTP_TIMEOUT_S", "5")),
+            routing_mode=os.environ.get("ROUTING_MODE", "real"),  # type: ignore[arg-type]
+            routing_timezone=os.environ.get("ROUTING_TIMEZONE", "Europe/Rome"),
             rt_base_url=os.environ.get("RT_BASE_URL", "https://proxy.busone.app/anm"),
             rt_client_header=os.environ.get("RT_CLIENT_HEADER", ""),
             rt_use_header=os.environ.get("RT_USE_HEADER", "nonprofit"),
@@ -109,6 +129,13 @@ def load_config(config_dir: str | Path | None = None) -> AppConfig:
             http_timeout_s=float(os.environ.get("HTTP_TIMEOUT_S", "10")),
             sqlite_path=os.environ.get("SQLITE_PATH", ".data/app.db"),
             database_url=os.environ.get("DATABASE_URL", ""),
+            gtfs_schema=os.environ.get("GTFS_SCHEMA", "gtfs_eav"),
+            gtfs_dataset_key=os.environ.get("GTFS_DATASET_KEY", "eav"),
+            gtfs_datasets=_parse_gtfs_datasets(
+                os.environ.get("GTFS_DATASETS", "eav:gtfs_eav,anm:gtfs_anm")
+            ),
+            osm_schema=os.environ.get("OSM_SCHEMA", "osm_territory"),
+            osm_dataset_key=os.environ.get("OSM_DATASET_KEY", "osm_napoli"),
             cors_origins=cors_origins,
             log_level=os.environ.get("LOG_LEVEL", "info"),
         )

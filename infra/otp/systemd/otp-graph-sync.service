@@ -1,0 +1,12 @@
+[Unit]
+Description=Ricostruisce e sostituisce il grafo OTP dopo un aggiornamento GTFS/DB
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/r0x4n/hackaton2026CDS
+Environment=OTP_UNIT=otp-mobility.service
+ExecStart=/home/r0x4n/hackaton2026CDS/infra/otp/sync_graph_from_request.sh --request /home/r0x4n/hackaton2026CDS/data/otp-rebuild/request.json
+Nice=10
+TimeoutStartSec=1800

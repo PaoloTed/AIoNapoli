@@ -1,0 +1,8 @@
+{
+  "transitServiceStart": "2025-09-15",
+  "transitServiceEnd": "2030-12-31",
+  "transitModelTimeZone": "Europe/Rome",
+  "osmDefaults": {
+    "timeZone": "Europe/Rome"
+  }
+}

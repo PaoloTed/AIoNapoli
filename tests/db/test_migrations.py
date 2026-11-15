@@ -11,7 +11,13 @@ def test_da_zero() -> None:
     conn = get_sqlite_connection(":memory:")
     try:
         applied_first = apply_migrations(conn)
-        assert applied_first == ["001_init.sql"]
+        assert applied_first == [
+            "001_init.sql",
+            "002_gtfs_authoritative.sql",
+            "003_osm_territory.sql",
+            "004_disruptions.sql",
+            "005_gtfs_reference_namespaces.sql",
+        ]
 
         applied_second = apply_migrations(conn)
         assert applied_second == []
@@ -35,6 +41,8 @@ def test_da_zero() -> None:
             "vehicle_positions",
             "trip_updates",
             "ingestion_runs",
+            "gtfs_imports",
+            "gtfs_datasets",
             "findings",
             "decisions",
         }

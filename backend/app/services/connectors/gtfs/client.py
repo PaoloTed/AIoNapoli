@@ -160,7 +160,11 @@ class GtfsStaticClient:
         return total
 
     def load_from_zip_bytes(self, zip_bytes: bytes, data_reference: str) -> int:
-        """Parse routes and stops from a GTFS zip archive bytes buffer."""
+        """Legacy partial ZIP reader, not the authoritative GTFS importer.
+
+        It is kept for compatibility with demo/inspection paths. Real imports
+        go through ``infra/postgres/import-gtfs.sh`` into a dedicated schema.
+        """
         now_iso = datetime.now(timezone.utc).isoformat()
         total = 0
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
@@ -171,7 +175,8 @@ class GtfsStaticClient:
                     {
                         "stop_id": r["stop_id"],
                         "stop_name": r["stop_name"],
-                        "zone_id": r.get("zone_id") or "Z_NAPOLI",
+                        # GTFS zone_id is a fare zone, not a project zone.
+                        "zone_id": None,
                         "geometry": f"POINT({r['stop_lon']} {r['stop_lat']})",
                         "source_id": self.source_id,
                         "data_reference": data_reference,

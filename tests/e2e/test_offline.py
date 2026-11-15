@@ -57,7 +57,7 @@ def test_senza_rete(capsys: pytest.CaptureFixture[str], fixed_clock: FixedClock)
     EventsConnector(repo).run()
     OccupancyConnector(repo).run()
 
-    otp = OtpClient(base_url="http://127.0.0.1:59999", http_client=offline_http)
+    otp = OtpClient(base_url="http://127.0.0.1:59999", http_client=offline_http, mode="demo")
     findings = [
         MobilityAgent(repo, otp_client=otp).evaluate(route_id="L2", now=fixed_clock.now()),
         CrowdingAgent(repo).evaluate(zone_id="Z_BAGNOLI", now=fixed_clock.now()),

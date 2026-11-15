@@ -29,6 +29,15 @@ def translate_pg_sql_to_sqlite(sql_text: str) -> str:
         lines.append(raw_line)
     text = "\n".join(lines)
 
+    # SQLite non supporta ALTER COLUMN ... DROP NOT NULL. Nei test SQLite la
+    # colonna è già nullable perché 001_init.sql viene creato ex novo.
+    text = re.sub(
+        r"ALTER\s+TABLE\s+[\w\"]+\s+ALTER\s+COLUMN\s+[\w\"]+\s+DROP\s+NOT\s+NULL\s*;",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+
     replacements = [
         (r"NOW\(\)\s*-\s*INTERVAL\s*'90 seconds'", "datetime('now', '-90 seconds')"),
         (r"GEOGRAPHY\s*\([^)]+\)", "TEXT"),
@@ -118,6 +127,18 @@ def apply_migrations(
         if sql_file.name in applied_set:
             continue
         raw_sql = sql_file.read_text(encoding="utf-8")
+        if sqlite_mode and any(
+            line.strip() == "-- sqlite: skip" for line in raw_sql.splitlines()[:5]
+        ):
+            placeholder = "?"
+            cur.execute(
+                f"INSERT INTO schema_migrations (filename) VALUES ({placeholder})",
+                (sql_file.name,),
+            )
+            conn.commit()
+            applied_now.append(sql_file.name)
+            continue
+
         sql_to_run = translate_pg_sql_to_sqlite(raw_sql) if sqlite_mode else raw_sql
         for stmt in _split_sql_statements(sql_to_run):
             cur.execute(stmt)

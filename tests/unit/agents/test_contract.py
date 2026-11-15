@@ -24,7 +24,7 @@ def test_finding_o_refusal() -> None:
 
     # Empty repository -> Refusals
     empty_repo = InMemorySourceRepository(load_fixtures=False)
-    otp = OtpClient(base_url="http://127.0.0.1:59999", timeout_s=0.05)
+    otp = OtpClient(base_url="http://127.0.0.1:59999", timeout_s=0.05, mode="demo")
     for out in (
         MobilityAgent(empty_repo, otp_client=otp).evaluate(route_id="L2", now=now),
         CrowdingAgent(empty_repo).evaluate(zone_id="Z_BAGNOLI", now=now),

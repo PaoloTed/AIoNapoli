@@ -36,15 +36,15 @@ def test_rifiuto_punto_non_mappato() -> None:
     assert res.reason_code == "unmapped_point"
 
 
-def test_otp_spento() -> None:
-    """REQ-DEG-03: offline OTP falls back to fixture with is_simulated=True."""
+def test_demo_offline_fixture() -> None:
+    """Demo mode uses the fixture and marks the result as simulated."""
     repo = InMemorySourceRepository(load_fixtures=True)
 
     def _failing_handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("OTP offline", request=request)
 
     client = httpx.Client(transport=httpx.MockTransport(_failing_handler))
-    otp = OtpClient(base_url="http://localhost:8080", http_client=client)
+    otp = OtpClient(base_url="http://localhost:8080", http_client=client, mode="demo")
     agent = MobilityAgent(repo, otp_client=otp)
 
     res = agent.evaluate(

@@ -5,9 +5,8 @@
  * @verified 2026-11-15
  */
 
-import { RecipientApp } from "@/components/recipient/RecipientApp";
-import { getDefaultScenarioId } from "@/lib/scenarios";
+import { RecipientShell } from "@/components/recipient/RecipientShell";
 
 export default function HomePage() {
-  return <RecipientApp scenarioId={getDefaultScenarioId()} />;
+  return <RecipientShell />;
 }

@@ -20,15 +20,7 @@ export default function SituationPage() {
   const vehicles = scenario?.vehicle_positions ?? [];
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 7fr) minmax(300px, 3fr)",
-        gap: "16px",
-        height: "100%",
-        minHeight: "calc(100vh - 92px)",
-      }}
-    >
+    <div className="operator-grid-situation" style={{ minHeight: "calc(100vh - 92px)" }}>
       <MapPanel
         findings={findings}
         vehicles={vehicles}

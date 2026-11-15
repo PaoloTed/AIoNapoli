@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
-import { extractEstimatedTimeFromAction, formatPercent } from "@/lib/format";
+import { extractEstimatedTimeFromAction } from "@/lib/format";
 import type { PlanItem, NarrativeItem } from "@/lib/types/contracts";
 import type { Locale } from "@/lib/state/store";
 import type { Target } from "@/lib/types/contracts";
@@ -57,7 +57,7 @@ export function PlanCard({
             padding: "4px 10px",
           }}
         >
-          priorità {item.priority}
+          {item.priority === 1 ? "Consigliato" : "Alternativa"}
         </span>
       </div>
 
@@ -70,7 +70,7 @@ export function PlanCard({
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: t.space[2], flexWrap: "wrap" }}>
         <span style={{ fontSize: t.font.size.xs, color: t.color.text.muted }}>
-          {estimate ? `tempo stimato ${estimate}` : `confidenza piano ${formatPercent(item.priority === 1 ? 0.9 : 0.8)}`}
+          {estimate ? `tempo stimato ${estimate}` : item.priority === 1 ? "opzione consigliata" : "alternativa disponibile"}
         </span>
         <button
           type="button"

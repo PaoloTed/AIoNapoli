@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "AIoNapoli — Napoli Agentic City",
   description:
     "Decisioni deterministiche con provenienza dichiarata per operatore, turista e cittadino.",
+  icons: { icon: "/brand/icon-aionapoli.svg" },
 };
 
 export default function RootLayout({

@@ -190,9 +190,9 @@ describe("Hygiene & Boundaries (FE-REQ-31, FE-REQ-32)", () => {
     for (const file of files) {
       const content = fs.readFileSync(file, "utf8");
       expect(content).not.toMatch(/\b(pk\.|sk\.)[A-Za-z0-9_-]{8,}/);
-      // Any fetch() call must live only in lib/api.ts
+      // Any fetch() call must live only in the API layer (legacy api.ts or new api/client.ts)
       if (/\bfetch\s*\(/.test(content)) {
-        expect(path.basename(file)).toBe("api.ts");
+        expect(["api.ts", "client.ts"]).toContain(path.basename(file));
       }
     }
   });

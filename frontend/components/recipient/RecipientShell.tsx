@@ -40,6 +40,7 @@ export function RecipientShell() {
       />
 
       <main
+        className="recipient-main"
         style={{
           flex: 1,
           width: "100%",

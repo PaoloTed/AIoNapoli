@@ -10,6 +10,7 @@
 import { useCallback, useRef, useState } from "react";
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import { useAppStore } from "@/lib/state/store";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { Target } from "@/lib/types/contracts";
 import { ChatMessage, type RecipientChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -47,8 +48,6 @@ export function ChatPanel({ target, onClose }: { target: Target; onClose?: () =>
     [decision, lang, target],
   );
 
-  const accent = target === "tourist" ? t.color.accent.tourist : t.color.accent.citizen;
-
   return (
     <section
       aria-label="Chat assistente"
@@ -78,17 +77,16 @@ export function ChatPanel({ target, onClose }: { target: Target; onClose?: () =>
           <span
             aria-hidden="true"
             style={{
-              width: "30px",
-              height: "30px",
+              width: "34px",
+              height: "34px",
               borderRadius: "50%",
               display: "grid",
               placeItems: "center",
               background: target === "tourist" ? t.color.accent.touristLight : t.color.accent.citizenLight,
-              color: accent,
-              fontWeight: 700,
+              overflow: "hidden",
             }}
           >
-            ✦
+            <BrandLogo variant="icon" height={24} />
           </span>
           <div>
             <strong style={{ display: "block", fontSize: t.font.size.sm, color: t.color.text.primary }}>

@@ -23,6 +23,23 @@ function project(lon: number, lat: number): [number, number] {
   ];
 }
 
+const SHORT_LABEL: Record<string, string> = {
+  Z_BAGNOLI: "Bagnoli",
+  Z_FUORIGROTTA: "Fuorigrotta",
+  Z_MERGELLINA: "Mergellina",
+  Z_MUNICIPIO: "Municipio",
+  Z_CENTRO: "Centro",
+  Z_GARIBALDI: "Garibaldi",
+};
+
+const LABEL_OFFSET: Record<string, { dx: number; dy: number }> = {
+  Z_FUORIGROTTA: { dx: -18, dy: 4 },
+  Z_MERGELLINA: { dx: -12, dy: -14 },
+  Z_MUNICIPIO: { dx: 24, dy: 30 },
+  Z_CENTRO: { dx: 40, dy: -22 },
+  Z_GARIBALDI: { dx: 34, dy: 14 },
+};
+
 const RANK: Record<Severity, number> = { low: 1, medium: 2, high: 3, critical: 4 };
 
 function zoneTone(severity: Severity | undefined): { color: string; label: string } {
@@ -97,10 +114,20 @@ export function SimplifiedMap({ findings }: { findings: Finding[] }) {
             }}
             style={{ cursor: "pointer" }}
           >
-            <circle cx={zone.x} cy={zone.y} r="26" fill={`${zone.tone.color}22`} stroke={zone.tone.color} strokeWidth="2" />
-            <circle cx={zone.x} cy={zone.y} r="9" fill={zone.tone.color} />
-            <text x={zone.x} y={zone.y - 36} textAnchor="middle" fontSize="12" fontWeight="600" fill={t.color.text.primary}>
-              {zone.label}
+            <circle cx={zone.x} cy={zone.y} r="20" fill={`${zone.tone.color}22`} stroke={zone.tone.color} strokeWidth="2" />
+            <circle cx={zone.x} cy={zone.y} r="7" fill={zone.tone.color} />
+            <text
+              x={zone.x + (LABEL_OFFSET[zone.zoneId]?.dx ?? 0)}
+              y={zone.y - 28 + (LABEL_OFFSET[zone.zoneId]?.dy ?? 0)}
+              textAnchor="middle"
+              fontSize="12"
+              fontWeight="600"
+              fill={t.color.text.primary}
+              stroke="#FFFFFF"
+              strokeWidth="3"
+              paintOrder="stroke"
+            >
+              {SHORT_LABEL[zone.zoneId] ?? zone.label}
             </text>
           </g>
         ))}

@@ -11,6 +11,7 @@ import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import type { Target } from "@/lib/types/contracts";
 import type { Locale } from "@/lib/state/store";
 import { PlanCard } from "./PlanCard";
+import { RefusalMessage } from "./RefusalMessage";
 import type { RecipientRetrievalItem } from "./retrieval";
 
 export type RecipientChatMessage = {
@@ -54,7 +55,11 @@ export function ChatMessage({
 
   return (
     <div style={{ display: "grid", gap: t.space[2] }}>
-      <p style={{ margin: 0, fontSize: t.font.size.sm, color: t.color.text.secondary }}>{message.text}</p>
+      {message.plans && message.plans.length > 0 ? (
+        <p style={{ margin: 0, fontSize: t.font.size.sm, color: t.color.text.secondary }}>{message.text}</p>
+      ) : (
+        <RefusalMessage />
+      )}
       {message.plans?.map((plan) => (
         <PlanCard
           key={`${message.id}-${plan.planIndex}`}

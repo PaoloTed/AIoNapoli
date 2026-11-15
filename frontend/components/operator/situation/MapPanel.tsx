@@ -56,10 +56,13 @@ export function MapPanel({
           position: "absolute",
           top: t.space[3],
           left: t.space[4],
+          right: t.space[4],
           zIndex: 2,
           display: "flex",
           alignItems: "center",
-          gap: t.space[3],
+          justifyContent: "space-between",
+          gap: t.space[2],
+          flexWrap: "wrap",
         }}
       >
         <h2 style={{ margin: 0, fontSize: t.font.size.lg, fontWeight: t.font.weight.semibold }}>
@@ -67,11 +70,12 @@ export function MapPanel({
         </h2>
         <span
           style={{
-            fontSize: t.font.size.xs,
+            fontSize: "10px",
             color: t.color.text.muted,
             border: `1px solid ${t.color.border.subtle}`,
             borderRadius: t.radius.pill,
             padding: "1px 8px",
+            whiteSpace: "nowrap",
           }}
         >
           bbox Napoli {NAPLES_BBOX.minLat}–{NAPLES_BBOX.maxLat} / {NAPLES_BBOX.minLon}–{NAPLES_BBOX.maxLon}
@@ -107,8 +111,15 @@ export function MapPanel({
             const [cx, cy] = project(NAPLES_ZONES[zoneId]?.center ?? [0, 0]);
             return (
               <g key={zoneId}>
-                <polygon points={points} fill="none" stroke={t.color.border.strong} strokeWidth={1.2} strokeDasharray="4 4" />
-                <text x={cx} y={cy + 4} textAnchor="middle" fill={t.color.text.muted} fontSize={10}>
+                <polygon
+                  points={points}
+                  fill="#111C2C"
+                  fillOpacity={0.55}
+                  stroke={t.color.border.strong}
+                  strokeWidth={1.2}
+                  strokeDasharray="4 4"
+                />
+                <text x={cx} y={cy + 4} textAnchor="middle" fill={t.color.text.muted} fontSize={11}>
                   {zoneId}
                 </text>
               </g>

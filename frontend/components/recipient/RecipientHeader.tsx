@@ -10,7 +10,7 @@
 import { recipientTokens as t } from "@/styles/design-tokens-recipient";
 import type { Target } from "@/lib/types/contracts";
 import type { Locale, StreamStatus } from "@/lib/state/store";
-import { LogoPlaceholder } from "./LogoPlaceholder";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { TargetSwitch } from "./TargetSwitch";
 
 const STATUS_LABEL: Record<StreamStatus, string> = {
@@ -47,7 +47,7 @@ export function RecipientHeader({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: t.space[4] }}>
-        <LogoPlaceholder size="md" />
+        <BrandLogo variant="full" height={42} priority />
         <span style={{ fontSize: t.font.size.sm, color: t.color.text.secondary, maxWidth: "320px" }}>
           La città che ti parla: mobilità, affollamento e meteo in un unico consiglio.
         </span>

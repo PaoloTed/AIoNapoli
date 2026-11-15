@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="AIoNapoli icon">
+  <defs>
+    <mask id="vesuvius-cutout">
+      <rect x="0" y="0" width="64" height="64" fill="#ffffff" />
+      <path
+        d="M23 37 L33.5 28.5 L35.5 32.5 L41 37.5"
+        stroke="#000000"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </mask>
+  </defs>
+  <!-- AI constellation links -->
+  <path
+    d="M16 21 L32 11 L48 21 M16 21 V35 M32 11 V25.5 M48 21 V36"
+    stroke="#4FB3D9"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- AI constellation nodes -->
+  <circle cx="16" cy="21" r="4.2" fill="#0B6E8F" />
+  <circle cx="32" cy="11" r="4.8" fill="#4FB3D9" />
+  <circle cx="48" cy="21" r="4.2" fill="#4FB3D9" />
+  <!-- Vesuvius & Monte Somma silhouette with transparent ridge cutout -->
+  <path
+    d="M11 40 L21 29 L26 32 L34 25 L51 41 C45 43.5 39 43.5 33 41.5 C26 39 18 38.5 11 40 Z"
+    fill="#0B6E8F"
+    mask="url(#vesuvius-cutout)"
+  />
+  <!-- Gulf of Naples waves -->
+  <path
+    d="M7 46 C17 39.5 26 42.5 35 45.5 C43 48.2 50 47.5 57 42.5 C53 50 44 52 34 49 C24 46 15 43 7 46 Z"
+    fill="#4FB3D9"
+  />
+  <path
+    d="M15 50.5 C21 57 30 60 40 58 C46 56.8 50.5 53.5 52.5 50.5 C46 53.5 38 54 30 51.5 C24.5 49.8 19.5 49.5 15 50.5 Z"
+    fill="#0B6E8F"
+  />
+</svg>

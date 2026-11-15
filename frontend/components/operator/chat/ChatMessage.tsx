@@ -8,6 +8,7 @@
 "use client";
 
 import { operatorTokens as t } from "@/styles/design-tokens-operator";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { CitationCard } from "./CitationCard";
 import type { RetrievalResult } from "./retrieval";
 
@@ -58,9 +59,7 @@ export function ChatMessage({
       }}
     >
       <header style={{ display: "flex", alignItems: "center", gap: t.space[2] }}>
-        <span style={{ color: t.color.accent.primary }} aria-hidden="true">
-          ✦
-        </span>
+        <BrandLogo variant="icon" height={18} />
         <strong style={{ fontSize: t.font.size.sm, color: t.color.text.primary }}>
           Assistente operativo
         </strong>

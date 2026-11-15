@@ -78,7 +78,9 @@ function weatherCard(findings: Finding[]): StatusCardSpec {
   return {
     icon: heavy ? "🌧️" : "☀️",
     title: heavy ? `Allerta meteo ${context.content.alert_level ?? ""}`.trim() : "Meteo stabile",
-    detail: context.content.note ?? "Condizioni meteo aggiornate dall'agente Contesto.",
+    detail: heavy
+      ? "Pioggia intensa prevista: porta l'ombrello e valuta un percorso al coperto."
+      : "Condizioni meteo serene per muoversi in città.",
     tone: heavy ? "attention" : "positive",
   };
 }

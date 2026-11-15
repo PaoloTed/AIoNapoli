@@ -48,7 +48,7 @@ export default function DecisionPage() {
   return (
     <div style={{ display: "grid", gap: "16px" }}>
       <DecisionMeta payload={decision} />
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 6fr) minmax(340px, 4fr)", gap: "16px" }}>
+      <div className="operator-grid-decision">
         <section aria-label="Piano d'azione" style={{ display: "grid", gap: "16px", alignContent: "start" }}>
           {groups.map((group) => (
             <TargetGroup key={group.target} target={group.target} items={group.items} />

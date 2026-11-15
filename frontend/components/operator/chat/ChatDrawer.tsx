@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { operatorTokens as t } from "@/styles/design-tokens-operator";
 import { useAppStore } from "@/lib/state/store";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage, type OperatorChatMessage } from "./ChatMessage";
 import { QuickActions } from "./QuickActions";
@@ -106,11 +107,14 @@ export function ChatDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         }}
       >
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <strong style={{ fontSize: t.font.size.lg }}>Chat operativa</strong>
-            <p style={{ margin: 0, fontSize: t.font.size.xs, color: t.color.text.muted }}>
-              citation-grounded · nessuna generazione libera
-            </p>
+          <div style={{ display: "flex", alignItems: "center", gap: t.space[2] }}>
+            <BrandLogo variant="icon" height={24} />
+            <div>
+              <strong style={{ fontSize: t.font.size.lg }}>Chat operativa</strong>
+              <p style={{ margin: 0, fontSize: t.font.size.xs, color: t.color.text.muted }}>
+                citation-grounded · nessuna generazione libera
+              </p>
+            </div>
           </div>
           <button
             type="button"

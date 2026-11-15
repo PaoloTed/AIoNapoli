@@ -28,13 +28,16 @@ export function OverviewHeader({ findings, target }: { findings: Finding[]; targ
     if (target === "tourist") {
       const parts = [zoneName ? `Sei nei pressi di ${zoneName}` : "Sei in città"];
       if (top.content.note) parts.push(top.content.note);
-      else parts.push(`Situazione ${top.severity} rilevata dall'agente ${top.agent}`);
+      else if (top.severity === "critical" || top.severity === "high") parts.push("La zona è molto affollata in questo momento");
+      else parts.push("C'è un po' di movimento, ma si può visitare");
       parts.push("Ti consiglio un percorso alternativo lontano dalla folla.");
       return parts.join(" · ");
     }
     return (
       top.content.note ??
-      `Situazione ${top.severity} su ${zoneName ?? "una zona monitorata"}: segui le indicazioni dell'assistente.`
+      (top.severity === "critical" || top.severity === "high"
+        ? `Situazione critica su ${zoneName ?? "una zona monitorata"}: segui le indicazioni dell'assistente.`
+        : `Qualche rallentamento su ${zoneName ?? "una zona monitorata"}: l'assistente può aiutarti a scegliere.`)
     );
   })();
 

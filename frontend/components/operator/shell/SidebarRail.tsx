@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { operatorTokens as t } from "@/styles/design-tokens-operator";
-import { LogoPlaceholder } from "./LogoPlaceholder";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const ITEMS = [
   { href: "/operator/situation", label: "Situazione", glyph: "◎" },
@@ -38,7 +38,7 @@ export function SidebarRail({ onOpenChat }: { onOpenChat: () => void }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: t.space[6] }}>
         <div style={{ padding: `0 ${t.space[2]}` }}>
-          <LogoPlaceholder size="sm" />
+          <BrandLogo variant="icon" height={30} priority />
           <p
             style={{
               margin: `${t.space[2]} 0 0`,
@@ -93,8 +93,8 @@ export function SidebarRail({ onOpenChat }: { onOpenChat: () => void }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: t.space[2],
-          padding: t.space[3],
+          gap: t.space[1],
+          padding: `${t.space[2]} ${t.space[2]}`,
           borderRadius: t.radius.sm,
           border: `1px solid ${t.color.border.strong}`,
           background: t.color.bg.panelAlt,
@@ -102,16 +102,17 @@ export function SidebarRail({ onOpenChat }: { onOpenChat: () => void }) {
           fontSize: t.font.size.sm,
           fontWeight: t.font.weight.semibold,
           cursor: "pointer",
+          whiteSpace: "nowrap",
         }}
       >
-        ✦ Chat operativa
+        ✦ Chat
         <kbd
           style={{
-            fontSize: t.font.size.xs,
+            fontSize: "10px",
             color: t.color.text.muted,
             border: `1px solid ${t.color.border.subtle}`,
             borderRadius: t.radius.sm,
-            padding: "0 4px",
+            padding: "0 3px",
           }}
         >
           Ctrl K

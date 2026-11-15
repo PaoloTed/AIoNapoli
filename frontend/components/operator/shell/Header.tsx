@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { operatorTokens as t } from "@/styles/design-tokens-operator";
 import { useAppStore } from "@/lib/state/store";
 import { formatRomeTime } from "@/lib/format";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { StatusDot } from "./StatusDot";
 
 const TITLES: Record<string, string> = {
@@ -40,7 +41,9 @@ export function Header({ onOpenChat }: { onOpenChat: () => void }) {
         gap: t.space[4],
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", gap: t.space[3] }}>
+      <div style={{ display: "flex", alignItems: "center", gap: t.space[3] }}>
+        <BrandLogo variant="full-light" height={26} />
+        <span style={{ width: "1px", height: "22px", background: t.color.border.strong }} aria-hidden="true" />
         <h1 style={{ margin: 0, fontSize: t.font.size.xl, fontWeight: t.font.weight.semibold }}>
           {title}
         </h1>

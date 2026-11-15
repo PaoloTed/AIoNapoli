@@ -1,0 +1,110 @@
+[
+  { "seq": 1, "event_type": "phase", "data": { "phase": "ingestion", "index": 0 } },
+  {
+    "seq": 2,
+    "event_type": "rule_evaluated",
+    "data": {
+      "rule_id": "R1_line2_crowding",
+      "agents": ["crowding"],
+      "fired": false,
+      "reason": "densità sotto soglia nel primo campione"
+    },
+    "rule_applied": "R1_line2_crowding",
+    "outcome": "non scattata"
+  },
+  {
+    "seq": 3,
+    "event_type": "rule_evaluated",
+    "data": {
+      "rule_id": "R2_conflict_route_vs_density",
+      "agents": ["mobility", "crowding"],
+      "fired": true,
+      "reason": "rotta su Bagnoli con densità 0.88"
+    },
+    "rule_applied": "R2_conflict_route_vs_density",
+    "outcome": "conflitto rilevato"
+  },
+  {
+    "seq": 4,
+    "event_type": "route_proposed",
+    "data": {
+      "proposal_id": "prop_otp_1",
+      "legs": [
+        {
+          "mode": "metro",
+          "line_id": "L2",
+          "from_stop": "Bagnoli",
+          "to_stop": "Campi Flegrei",
+          "duration_min": 12
+        }
+      ]
+    },
+    "agent": "mobility"
+  },
+  {
+    "seq": 5,
+    "event_type": "route_invalidated",
+    "data": {
+      "proposal_id": "prop_otp_1",
+      "reason": "Linea 2 bloccata per cantiere ANM",
+      "constraints": [
+        {
+          "kind": "closure",
+          "applies_at": "engine",
+          "description": "Tratta Campi Flegrei–Bagnoli chiusa"
+        }
+      ]
+    },
+    "agent": "incidents",
+    "outcome": "scartato"
+  },
+  {
+    "seq": 6,
+    "event_type": "route_proposed",
+    "data": {
+      "proposal_id": "prop_otp_2",
+      "legs": [
+        {
+          "mode": "bus",
+          "line_id": "R2",
+          "from_stop": "Bagnoli",
+          "to_stop": "Mergellina",
+          "duration_min": 18
+        }
+      ]
+    },
+    "agent": "mobility"
+  },
+  {
+    "seq": 7,
+    "event_type": "conflict_detected",
+    "data": {
+      "between": "mobility",
+      "and": "crowding",
+      "zone_id": "Z_BAGNOLI",
+      "description": "Rotta attrattiva per la regata ma banchina oltre soglia critica"
+    },
+    "rule_applied": "R2_conflict_route_vs_density"
+  },
+  {
+    "seq": 8,
+    "event_type": "priority_applied",
+    "data": { "priority": "P1", "winner": "crowding" },
+    "rule_applied": "P1",
+    "outcome": "sicurezza delle persone prima della rapidità"
+  },
+  {
+    "seq": 9,
+    "event_type": "plan_item_created",
+    "data": {
+      "plan_index": 0,
+      "target": "operator",
+      "action": "Potenziare collegamento Bagnoli-Mergellina"
+    }
+  },
+  {
+    "seq": 10,
+    "event_type": "negotiation_finished",
+    "data": { "iterations": 2, "agreement": true, "outcome": "agreement" }
+  }
+]

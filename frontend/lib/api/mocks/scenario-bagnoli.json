@@ -1,0 +1,106 @@
+{
+  "contract_version": "1.0.0",
+  "scenario_id": "bagnoli",
+  "title": "Regata America's Cup, Linea 2 ferma, pioggia in arrivo",
+  "findings": [
+    {
+      "agent": "mobility",
+      "type": "route_disruption",
+      "content": {
+        "zone_id": "Z_BAGNOLI",
+        "line_id": "L2",
+        "congestion": 0.88,
+        "origin": "Garibaldi",
+        "destination": "Bagnoli",
+        "estimated_time_min": 22,
+        "note": "Linea 2 sospesa tra Campi Flegrei e Bagnoli per cantiere ANM."
+      },
+      "confidence": 0.9,
+      "severity": "high",
+      "source_id": "anm",
+      "data_reference": "rss:2026-11-14T16:12:00+01:00",
+      "is_simulated": false,
+      "timestamp": "2026-11-14T16:12:00+01:00"
+    },
+    {
+      "agent": "crowding",
+      "type": "density_alert",
+      "content": {
+        "zone_id": "Z_BAGNOLI",
+        "line_id": "R2",
+        "density": 0.88,
+        "expected_attendance": 12000,
+        "note": "Banchine di Bagnoli oltre l'88% di saturazione dalle 17:40."
+      },
+      "confidence": 0.82,
+      "severity": "critical",
+      "source_id": "ir_sensors",
+      "data_reference": "occupancy:2026-11-14T17:40:00+01:00",
+      "is_simulated": true,
+      "timestamp": "2026-11-14T17:40:00+01:00"
+    },
+    {
+      "agent": "context",
+      "type": "impact_assessment",
+      "content": {
+        "zone_id": "Z_BAGNOLI",
+        "heavy_rain": true,
+        "alert_level": "arancione",
+        "note": "Allerta meteo arancione: rovesci attesi dalle 19:00."
+      },
+      "confidence": 0.75,
+      "severity": "medium",
+      "source_id": "open_meteo",
+      "data_reference": "weather:2026-11-14T17:00:00+01:00",
+      "is_simulated": true,
+      "timestamp": "2026-11-14T17:00:00+01:00"
+    },
+    {
+      "agent": "context",
+      "type": "impact_assessment",
+      "content": {
+        "zone_id": "Z_BAGNOLI",
+        "expected_attendance": 12000,
+        "note": "Regata America's Cup: 12.000 presenze attese entro le 18:30."
+      },
+      "confidence": 0.7,
+      "severity": "medium",
+      "source_id": "event_calendar",
+      "data_reference": "events:2026-11-14T12:00:00+01:00",
+      "is_simulated": true,
+      "timestamp": "2026-11-14T12:00:00+01:00"
+    }
+  ],
+  "vehicle_positions": [
+    {
+      "vehicle_id": "ANM-2231",
+      "route_id": "R2",
+      "latitude": 40.8206,
+      "longitude": 14.1785,
+      "bearing": 214.5,
+      "observed_at": "2026-11-14T17:39:48+01:00",
+      "source_id": "anm",
+      "is_simulated": false
+    },
+    {
+      "vehicle_id": "ANM-3307",
+      "route_id": "L1",
+      "latitude": 40.8261,
+      "longitude": 14.1924,
+      "bearing": 180.0,
+      "observed_at": "2026-11-14T17:39:50+01:00",
+      "source_id": "anm",
+      "is_simulated": false
+    },
+    {
+      "vehicle_id": "ANM-1514",
+      "route_id": "151",
+      "latitude": 40.8339,
+      "longitude": 14.2187,
+      "bearing": 92.0,
+      "observed_at": "2026-11-14T17:39:52+01:00",
+      "source_id": "anm",
+      "is_simulated": true
+    }
+  ]
+}

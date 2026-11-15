@@ -1,0 +1,242 @@
+{
+  "contract_version": "1.0.0",
+  "decision_id": "dec_bagnoli_001",
+  "decision": {
+    "trigger": {
+      "rule_id": "R2_conflict_route_vs_density",
+      "agents_involved": ["mobility", "crowding", "context"]
+    },
+    "conflict": {
+      "detected": true,
+      "description": "La rotta proposta dalla Mobilità insiste su Bagnoli, dove l'Affollamento segnala densità critica (0.88) e la Linea 2 è bloccata."
+    },
+    "plan": [
+      {
+        "priority": 1,
+        "action": "Attivare navette sostitutive R2 Bagnoli–Mergellina ogni 8 minuti",
+        "target": "operator",
+        "rationale": "La Linea 2 è sospesa per cantiere ANM e la densità in banchina supera la soglia critica."
+      },
+      {
+        "priority": 2,
+        "action": "La Linea 2 è sospesa: usa la navetta R2 da Campi Flegrei verso Mergellina",
+        "target": "citizen",
+        "rationale": "Il percorso alternativo evita la zona critica di Bagnoli e mantiene i tempi sotto i 25 minuti."
+      },
+      {
+        "priority": 3,
+        "action": "Evita Bagnoli fino alle 20:00 e programma il rientro da Mergellina",
+        "target": "tourist",
+        "rationale": "L'area della regata è satura e la pioggia ridurrà la capacità delle banchine."
+      },
+      {
+        "priority": 4,
+        "action": "Presidiare le banchine di Bagnoli con 6 steward aggiuntivi",
+        "target": "operator",
+        "rationale": "Afflusso previsto di 12.000 persone con allerta meteo arancione in corso."
+      }
+    ],
+    "reasoning_log": [
+      {
+        "step": 1,
+        "agent": "orchestrator",
+        "finding_ref": "none",
+        "rule_applied": "INITIAL_INGESTION",
+        "outcome": "Acquisite 4 evidenze da mobility, crowding e context."
+      },
+      {
+        "step": 2,
+        "agent": "mobility",
+        "finding_ref": "rss:2026-11-14T16:12:00+01:00",
+        "rule_applied": "R2_conflict_route_vs_density",
+        "outcome": "Rotta su Linea 2 non percorribile: cantiere ANM tra Campi Flegrei e Bagnoli."
+      },
+      {
+        "step": 3,
+        "agent": "crowding",
+        "finding_ref": "occupancy:2026-11-14T17:40:00+01:00",
+        "rule_applied": "R1_line2_crowding",
+        "outcome": "Densità 0.88 a Z_BAGNOLI: superata la soglia critica di 0.80."
+      },
+      {
+        "step": 4,
+        "agent": "context",
+        "finding_ref": "weather:2026-11-14T17:00:00+01:00",
+        "rule_applied": "R3_weather_capacity",
+        "outcome": "Allerta arancione e pioggia intensa: capacità delle banchine ridotta del 20%."
+      },
+      {
+        "step": 5,
+        "agent": "context",
+        "finding_ref": "events:2026-11-14T12:00:00+01:00",
+        "rule_applied": "R4_event_surge",
+        "outcome": "12.000 presenze attese per la regata: surge di afflusso confermato."
+      },
+      {
+        "step": 6,
+        "agent": "orchestrator",
+        "finding_ref": "none",
+        "rule_applied": "P1",
+        "outcome": "Priorità P1 applicata: sicurezza delle persone davanti alla rapidità del percorso."
+      },
+      {
+        "step": 7,
+        "agent": "orchestrator",
+        "finding_ref": "none",
+        "rule_applied": "PLAN_SYNTHESIS",
+        "outcome": "Piano sintetizzato con 4 azioni per operator, citizen e tourist."
+      }
+    ],
+    "confidence": 0.87,
+    "timestamp": "2026-11-14T17:42:00+01:00"
+  },
+  "relevance": {
+    "rounding": 4,
+    "targets": {
+      "operator": {
+        "order": [0, 3, 1, 2],
+        "items": [
+          {
+            "plan_index": 0,
+            "score": 0.95,
+            "contributions": [
+              { "feature": "severity", "value": 1.0, "weight": 0.5, "contribution": 0.5 },
+              { "feature": "operation_impact", "value": 0.9, "weight": 0.5, "contribution": 0.45 }
+            ]
+          },
+          {
+            "plan_index": 3,
+            "score": 0.88,
+            "contributions": [
+              { "feature": "severity", "value": 0.9, "weight": 0.5, "contribution": 0.45 },
+              { "feature": "operation_impact", "value": 0.86, "weight": 0.5, "contribution": 0.43 }
+            ]
+          },
+          {
+            "plan_index": 1,
+            "score": 0.72,
+            "contributions": [
+              { "feature": "severity", "value": 0.7, "weight": 0.5, "contribution": 0.35 },
+              { "feature": "operation_impact", "value": 0.74, "weight": 0.5, "contribution": 0.37 }
+            ]
+          },
+          {
+            "plan_index": 2,
+            "score": 0.61,
+            "contributions": [
+              { "feature": "severity", "value": 0.6, "weight": 0.5, "contribution": 0.3 },
+              { "feature": "operation_impact", "value": 0.62, "weight": 0.5, "contribution": 0.31 }
+            ]
+          }
+        ]
+      },
+      "tourist": {
+        "order": [2, 1, 0, 3],
+        "items": [
+          {
+            "plan_index": 2,
+            "score": 0.93,
+            "contributions": [
+              { "feature": "tourist_fit", "value": 0.95, "weight": 0.6, "contribution": 0.57 },
+              { "feature": "severity", "value": 0.9, "weight": 0.4, "contribution": 0.36 }
+            ]
+          },
+          {
+            "plan_index": 1,
+            "score": 0.79,
+            "contributions": [
+              { "feature": "tourist_fit", "value": 0.8, "weight": 0.6, "contribution": 0.48 },
+              { "feature": "severity", "value": 0.78, "weight": 0.4, "contribution": 0.31 }
+            ]
+          },
+          {
+            "plan_index": 0,
+            "score": 0.55,
+            "contributions": [
+              { "feature": "tourist_fit", "value": 0.5, "weight": 0.6, "contribution": 0.3 },
+              { "feature": "severity", "value": 0.62, "weight": 0.4, "contribution": 0.25 }
+            ]
+          },
+          {
+            "plan_index": 3,
+            "score": 0.42,
+            "contributions": [
+              { "feature": "tourist_fit", "value": 0.4, "weight": 0.6, "contribution": 0.24 },
+              { "feature": "severity", "value": 0.45, "weight": 0.4, "contribution": 0.18 }
+            ]
+          }
+        ]
+      },
+      "citizen": {
+        "order": [1, 0, 2, 3],
+        "items": [
+          {
+            "plan_index": 1,
+            "score": 0.94,
+            "contributions": [
+              { "feature": "commute_fit", "value": 0.96, "weight": 0.6, "contribution": 0.58 },
+              { "feature": "severity", "value": 0.9, "weight": 0.4, "contribution": 0.36 }
+            ]
+          },
+          {
+            "plan_index": 0,
+            "score": 0.83,
+            "contributions": [
+              { "feature": "commute_fit", "value": 0.8, "weight": 0.6, "contribution": 0.48 },
+              { "feature": "severity", "value": 0.87, "weight": 0.4, "contribution": 0.35 }
+            ]
+          },
+          {
+            "plan_index": 2,
+            "score": 0.58,
+            "contributions": [
+              { "feature": "commute_fit", "value": 0.55, "weight": 0.6, "contribution": 0.33 },
+              { "feature": "severity", "value": 0.62, "weight": 0.4, "contribution": 0.25 }
+            ]
+          },
+          {
+            "plan_index": 3,
+            "score": 0.44,
+            "contributions": [
+              { "feature": "commute_fit", "value": 0.42, "weight": 0.6, "contribution": 0.25 },
+              { "feature": "severity", "value": 0.47, "weight": 0.4, "contribution": 0.19 }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "narrative": {
+    "mode": "replay",
+    "items": [
+      {
+        "plan_index": 0,
+        "texts": {
+          "it": "Navette sostitutive R2 ogni 8 minuti tra Bagnoli e Mergellina.",
+          "en": "Replacement R2 shuttles every 8 minutes between Bagnoli and Mergellina."
+        }
+      },
+      {
+        "plan_index": 1,
+        "texts": {
+          "it": "Linea 2 sospesa: prendi la navetta R2 da Campi Flegrei per Mergellina.",
+          "en": "Line 2 is suspended: take the R2 shuttle from Campi Flegrei to Mergellina."
+        }
+      },
+      {
+        "plan_index": 2,
+        "texts": {
+          "it": "Evita Bagnoli fino alle 20:00: la zona della regata è molto affollata.",
+          "en": "Avoid Bagnoli until 8 pm: the regatta area is very crowded."
+        }
+      },
+      {
+        "plan_index": 3,
+        "texts": {
+          "it": "Sei steward in più presidiano le banchine di Bagnoli.",
+          "en": "Six extra stewards are monitoring the Bagnoli platforms."
+        }
+      }
+    ]
+  }
+}

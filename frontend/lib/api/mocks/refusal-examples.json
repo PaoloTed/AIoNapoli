@@ -1,0 +1,14 @@
+[
+  {
+    "agent": "mobility",
+    "reason_code": "unmapped_point",
+    "missing_input": ["destination_coordinates"],
+    "detail": "La destinazione richiesta è fuori dal perimetro urbano di Napoli."
+  },
+  {
+    "agent": "crowding",
+    "reason_code": "missing_realtime",
+    "missing_input": ["occupancy_stream"],
+    "detail": "I sensori di banchina non trasmettono dati in tempo reale."
+  }
+]

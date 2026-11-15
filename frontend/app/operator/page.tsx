@@ -1,20 +1,12 @@
-"use client";
+/**
+ * @purpose Redirect deterministico della radice operatore verso la scheda Situazione
+ * @contracts nessuno
+ * @tokens operator
+ * @verified 2026-11-15
+ */
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { OperatorView } from "@/components/OperatorView";
-import { OperatorSkeleton } from "@/components/states/Skeleton";
-
-function OperatorRouteContent() {
-  const searchParams = useSearchParams();
-  const scenarioId = searchParams.get("scenario") ?? undefined;
-  return <OperatorView scenarioId={scenarioId} />;
-}
+import { redirect } from "next/navigation";
 
 export default function OperatorPage() {
-  return (
-    <Suspense fallback={<OperatorSkeleton />}>
-      <OperatorRouteContent />
-    </Suspense>
-  );
+  redirect("/operator/situation");
 }

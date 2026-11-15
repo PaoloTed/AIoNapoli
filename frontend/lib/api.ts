@@ -6,10 +6,11 @@ import {
   problemSchema,
   scenarioResponseSchema,
   type AgentName,
+  type DecisionRequest,
   type DecisionResponse,
-  type Finding,
   type FindingResponse,
-  type Problem,
+  type ProblemDetail,
+  type RouteRequestOut,
   type ScenarioResponse,
 } from "./contracts";
 import { getDict, type Locale } from "./i18n";
@@ -21,20 +22,36 @@ export function getApiBaseUrl(): string {
   return base.replace(/\/+$/, "");
 }
 
+/**
+ * Strongly typed ApiError carrying RFC 9457 ProblemDetail
+ */
 export class ApiError extends Error {
-  constructor(readonly problem: Problem) {
-    super(problem.detail);
+  readonly problem: ProblemDetail;
+
+  constructor(problem: ProblemDetail) {
+    super(problem.detail || problem.title || "API Error");
     this.name = "ApiError";
+    this.problem = problem;
   }
 }
 
-export class NetworkError extends Error {
-  constructor(
-    readonly kind: "timeout" | "network",
-    message: string,
-  ) {
-    super(message);
+/**
+ * Network / Timeout error, extending ApiError for unified handling
+ */
+export class NetworkError extends ApiError {
+  readonly kind: "timeout" | "network";
+
+  constructor(kind: "timeout" | "network", message: string) {
+    super({
+      type: "about:blank",
+      title: kind === "timeout" ? "Timeout" : "Network Error",
+      status: kind === "timeout" ? 504 : 503,
+      code: kind === "timeout" ? "upstream_timeout" : "upstream_unavailable",
+      detail: message,
+      instance: "",
+    });
     this.name = "NetworkError";
+    this.kind = kind;
   }
 }
 
@@ -51,7 +68,10 @@ export type CheckedEnvelope<T> = {
   contractMismatch: boolean;
 };
 
-function sanitizeProblem(status: number, path: string, rawBody: unknown): Problem {
+/**
+ * Sanitizes raw error responses to guarantee no raw stack traces or internal secrets leak
+ */
+function sanitizeProblem(status: number, path: string, rawBody: unknown): ProblemDetail {
   const parsed = problemSchema.safeParse(rawBody);
   if (parsed.success) {
     return {
@@ -76,38 +96,45 @@ function sanitizeProblem(status: number, path: string, rawBody: unknown): Proble
   };
 }
 
-async function requestJson(
+/**
+ * Low-level typed HTTP client.
+ * Invariant: All fetch() calls in the frontend MUST live in lib/api.ts (FE-REQ-32).
+ */
+export async function apiFetch<T>(
   path: string,
-  init?: RequestInit,
-  externalSignal?: AbortSignal,
-): Promise<unknown> {
+  options?: RequestInit,
+  signal?: AbortSignal,
+): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const url = path.startsWith("http://") || path.startsWith("https://") ? path : `${baseUrl}${path}`;
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort("timeout"), REQUEST_TIMEOUT_MS);
 
-  const onExternalAbort = () => controller.abort(externalSignal?.reason);
-  if (externalSignal) {
-    if (externalSignal.aborted) {
+  const onExternalAbort = () => controller.abort(signal?.reason);
+  if (signal) {
+    if (signal.aborted) {
       clearTimeout(timeoutId);
       throw new NetworkError("network", "Richiesta annullata");
     }
-    externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+    signal.addEventListener("abort", onExternalAbort, { once: true });
   }
 
   let res: Response;
   try {
-    res = await fetch(`${getApiBaseUrl()}${path}`, {
-      ...init,
+    res = await fetch(url, {
+      ...options,
       cache: "no-store",
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
+        ...(options?.headers ?? {}),
       },
     });
   } catch (err) {
     clearTimeout(timeoutId);
-    if (externalSignal) {
-      externalSignal.removeEventListener("abort", onExternalAbort);
+    if (signal) {
+      signal.removeEventListener("abort", onExternalAbort);
     }
     const isAbort =
       err instanceof Error && (err.name === "AbortError" || controller.signal.aborted);
@@ -118,8 +145,8 @@ async function requestJson(
   }
 
   clearTimeout(timeoutId);
-  if (externalSignal) {
-    externalSignal.removeEventListener("abort", onExternalAbort);
+  if (signal) {
+    signal.removeEventListener("abort", onExternalAbort);
   }
 
   let body: unknown;
@@ -133,7 +160,18 @@ async function requestJson(
     throw new ApiError(sanitizeProblem(res.status, path, body));
   }
 
-  return body;
+  return body as T;
+}
+
+/**
+ * Internal helper for envelope validation
+ */
+async function requestJson(
+  path: string,
+  init?: RequestInit,
+  externalSignal?: AbortSignal,
+): Promise<unknown> {
+  return apiFetch<unknown>(path, init, externalSignal);
 }
 
 function parseEnvelope<T>(
@@ -166,6 +204,9 @@ function parseEnvelope<T>(
   }
 }
 
+/**
+ * Fetch a scenario snapshot from the backend
+ */
 export async function getScenario(
   scenarioId: string,
   signal?: AbortSignal,
@@ -175,9 +216,9 @@ export async function getScenario(
   return parseEnvelope<ScenarioResponse>(raw, scenarioResponseSchema, compatScenarioResponseSchema);
 }
 
-export type DecisionRequest = { scenario_id: string } | { findings: Finding[] };
-
-// POST /decision never retries automatically (API-CLIENT.md §2)
+/**
+ * POST /api/v1/decision never retries automatically
+ */
 export async function postDecision(
   payload: DecisionRequest,
   signal?: AbortSignal,
@@ -194,13 +235,15 @@ export async function postDecision(
   return parseEnvelope<DecisionResponse>(raw, decisionResponseSchema, compatDecisionResponseSchema);
 }
 
-export async function fetchRouteRequestApi(
+/**
+ * POST /api/v1/route-request parses natural language route inquiries
+ */
+export async function postRouteRequest(
   text: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  const path = "/api/v1/route-request";
-  return requestJson(
-    path,
+): Promise<RouteRequestOut> {
+  return apiFetch<RouteRequestOut>(
+    "/api/v1/route-request",
     {
       method: "POST",
       body: JSON.stringify({ text }),
@@ -209,6 +252,30 @@ export async function fetchRouteRequestApi(
   );
 }
 
+/**
+ * Alias for route request API
+ */
+export async function fetchRouteRequestApi(
+  text: string,
+  signal?: AbortSignal,
+): Promise<RouteRequestOut> {
+  return postRouteRequest(text, signal);
+}
+
+/**
+ * Open SSE EventSource stream for a given scenario
+ */
+export function openStream(scenarioId: string): EventSource {
+  return new EventSource(getScenarioStreamUrl(scenarioId));
+}
+
+export function getScenarioStreamUrl(scenarioId: string): string {
+  return `${getApiBaseUrl()}/api/v1/scenario/${encodeURIComponent(scenarioId)}/stream`;
+}
+
+/**
+ * Determinism check comparing 2 consecutive decisions for the same scenario
+ */
 export type RepeatDecisionResult = {
   first: CheckedEnvelope<DecisionResponse>;
   second: CheckedEnvelope<DecisionResponse>;
@@ -225,8 +292,37 @@ export async function repeatDecisionCheck(scenarioId: string): Promise<RepeatDec
   };
 }
 
-export function getScenarioStreamUrl(scenarioId: string): string {
-  return `${getApiBaseUrl()}/api/v1/scenario/${encodeURIComponent(scenarioId)}/stream`;
+/**
+ * Graceful mock fallback mechanism.
+ * When NEXT_PUBLIC_USE_MOCKS is true or backend is unreachable, falls back to local fixtures.
+ */
+export type MockFallbackOptions = {
+  forceMock?: boolean;
+  onFallback?: (reason: string) => void;
+};
+
+export async function withMockFallback<T>(
+  apiFn: () => Promise<T>,
+  mockFallbackFn: () => T | Promise<T>,
+  options?: MockFallbackOptions,
+): Promise<{ data: T; isMock: boolean }> {
+  const envMock = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
+  if (options?.forceMock || envMock) {
+    const data = await mockFallbackFn();
+    return { data, isMock: true };
+  }
+
+  try {
+    const data = await apiFn();
+    return { data, isMock: false };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "Backend unavailable";
+    if (options?.onFallback) {
+      options.onFallback(reason);
+    }
+    const data = await mockFallbackFn();
+    return { data, isMock: true };
+  }
 }
 
 export type ErrorPlacement = "screen" | "banner" | "card" | "decision" | "none";
@@ -242,7 +338,7 @@ export type ProblemPresentation = {
 };
 
 export function mapProblemToPresentation(
-  problem: Problem,
+  problem: ProblemDetail,
   locale: Locale = "it",
 ): ProblemPresentation {
   const d = getDict(locale);
@@ -350,7 +446,7 @@ export function mapProblemToPresentation(
 
 export function isAgentRefusalProblem(
   error: unknown,
-): error is ApiError & { problem: Problem & { refusal: NonNullable<Problem["refusal"]> } } {
+): error is ApiError & { problem: ProblemDetail & { refusal: NonNullable<ProblemDetail["refusal"]> } } {
   return (
     error instanceof ApiError &&
     error.problem.code === "agent_refusal" &&

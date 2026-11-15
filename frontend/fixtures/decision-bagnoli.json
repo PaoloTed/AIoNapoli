@@ -1,0 +1,239 @@
+{
+  "contract_version": "1.0.0",
+  "decision_id": "23afe929acf8f472",
+  "decision": {
+    "trigger": {
+      "rule_id": "R1_line2_crowding",
+      "agents_involved": [
+        "mobility",
+        "crowding",
+        "context"
+      ]
+    },
+    "conflict": {
+      "detected": true,
+      "description": "Il percorso verso Z_BAGNOLI attraversa la zona satura rilevata da crowding; deviazione diretta scartata per sicurezza"
+    },
+    "plan": [
+      {
+        "priority": 1,
+        "action": "Attivare deviazione bus di superficie su asse alternativo evitando Z_BAGNOLI; priorita' 1 per sicurezza",
+        "target": "operator",
+        "rationale": "P1 sicurezza delle persone; densita' 0.91 oltre soglia 0.85 (R1_line2_crowding); percorso diretto scartato"
+      },
+      {
+        "priority": 1,
+        "action": "Alternativa: linea R2 / Linea 1 verso poli al coperto (Museo MANN), tempo stimato 20 min",
+        "target": "tourist",
+        "rationale": "P2 tempo di percorrenza; itinerario al coperto consigliato per pioggia intensa"
+      },
+      {
+        "priority": 1,
+        "action": "Raggiungi il servizio pubblico in 15 min via percorso alternativo Cumana / Bus 151",
+        "target": "citizen",
+        "rationale": "P3 esperienza; collegamento diretto al servizio pubblico evitando i nodi congestionati"
+      }
+    ],
+    "reasoning_log": [
+      {
+        "step": 1,
+        "agent": "crowding",
+        "finding_ref": "a5852d144fb2",
+        "rule_applied": "R1_line2_crowding",
+        "outcome": "mobility.severity=high e density=0.91 oltre soglia 0.85"
+      },
+      {
+        "step": 2,
+        "agent": "mobility",
+        "finding_ref": "b26d58b90c9a",
+        "rule_applied": "R2_conflict_route_vs_density",
+        "outcome": "percorso e zona satura coincidono su Z_BAGNOLI (density=0.91 > 0.85)"
+      },
+      {
+        "step": 3,
+        "agent": "context",
+        "finding_ref": "df855e7bf9a2",
+        "rule_applied": "R3_weather_capacity",
+        "outcome": "pioggia intensa attiva e density=0.91 oltre soglia 0.70, capacita' ridotta"
+      },
+      {
+        "step": 4,
+        "agent": "context",
+        "finding_ref": "df855e7bf9a2",
+        "rule_applied": "R4_event_surge",
+        "outcome": "affluenza attesa 12000 > 10000 con congestion=0.88, valutate alternative"
+      },
+      {
+        "step": 5,
+        "agent": "orchestrator",
+        "finding_ref": "a5852d144fb2",
+        "rule_applied": "P1",
+        "outcome": "priorita' P1 (sicurezza delle persone) applicata, percorso diretto scartato"
+      },
+      {
+        "step": 6,
+        "agent": "orchestrator",
+        "finding_ref": "b26d58b90c9a",
+        "rule_applied": "P2",
+        "outcome": "priorita' P2 (tempo di percorrenza) applicata, alternativa R2 proposta"
+      },
+      {
+        "step": 7,
+        "agent": "orchestrator",
+        "finding_ref": "a5852d144fb2",
+        "rule_applied": "P1",
+        "outcome": "generata azione operatore deviazione bus di superficie"
+      },
+      {
+        "step": 8,
+        "agent": "orchestrator",
+        "finding_ref": "df855e7bf9a2",
+        "rule_applied": "P2",
+        "outcome": "generata azione turista itinerario coperto R2"
+      },
+      {
+        "step": 9,
+        "agent": "orchestrator",
+        "finding_ref": "b26d58b90c9a",
+        "rule_applied": "P3",
+        "outcome": "generata azione cittadino percorso 15 min"
+      }
+    ],
+    "confidence": 0.83,
+    "timestamp": "2026-11-15T08:14:36Z"
+  },
+  "relevance": {
+    "rounding": 4,
+    "targets": {
+      "operator": {
+        "order": [0, 2, 1],
+        "items": [
+          {
+            "plan_index": 0,
+            "score": 0.9345,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 1.0, "weight": 0.2, "contribution": 0.2 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.2, "contribution": 0.166 },
+              { "feature": "priority_rank", "value": 1.0, "weight": 0.2, "contribution": 0.2 },
+              { "feature": "severity_score", "value": 1.0, "weight": 0.4, "contribution": 0.4 }
+            ]
+          },
+          {
+            "plan_index": 2,
+            "score": 0.6945,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 0.6, "weight": 0.2, "contribution": 0.12 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.2, "contribution": 0.166 },
+              { "feature": "priority_rank", "value": 0.3333, "weight": 0.2, "contribution": 0.0667 },
+              { "feature": "severity_score", "value": 0.7, "weight": 0.4, "contribution": 0.28 }
+            ]
+          },
+          {
+            "plan_index": 1,
+            "score": 0.5845,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 0.2, "weight": 0.2, "contribution": 0.04 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.2, "contribution": 0.166 },
+              { "feature": "priority_rank", "value": 0.6667, "weight": 0.2, "contribution": 0.1333 },
+              { "feature": "severity_score", "value": 0.4875, "weight": 0.4, "contribution": 0.195 }
+            ]
+          }
+        ]
+      },
+      "tourist": {
+        "order": [1, 2, 0],
+        "items": [
+          {
+            "plan_index": 1,
+            "score": 0.8745,
+            "contributions": [
+              { "feature": "affects_route", "value": 1.0, "weight": 0.35, "contribution": 0.35 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 0.7, "weight": 0.2, "contribution": 0.14 },
+              { "feature": "time_to_event", "value": 0.9, "weight": 0.3, "contribution": 0.27 }
+            ]
+          },
+          {
+            "plan_index": 2,
+            "score": 0.797,
+            "contributions": [
+              { "feature": "affects_route", "value": 1.0, "weight": 0.35, "contribution": 0.35 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 0.4875, "weight": 0.2, "contribution": 0.0975 },
+              { "feature": "time_to_event", "value": 0.75, "weight": 0.3, "contribution": 0.225 }
+            ]
+          },
+          {
+            "plan_index": 0,
+            "score": 0.6845,
+            "contributions": [
+              { "feature": "affects_route", "value": 0.6, "weight": 0.35, "contribution": 0.21 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 1.0, "weight": 0.2, "contribution": 0.2 },
+              { "feature": "time_to_event", "value": 0.5, "weight": 0.3, "contribution": 0.15 }
+            ]
+          }
+        ]
+      },
+      "citizen": {
+        "order": [2, 0, 1],
+        "items": [
+          {
+            "plan_index": 2,
+            "score": 0.872,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 1.0, "weight": 0.4, "contribution": 0.4 },
+              { "feature": "affects_route", "value": 1.0, "weight": 0.25, "contribution": 0.25 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 0.4875, "weight": 0.2, "contribution": 0.0975 }
+            ]
+          },
+          {
+            "plan_index": 0,
+            "score": 0.7145,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 0.6, "weight": 0.4, "contribution": 0.24 },
+              { "feature": "affects_route", "value": 0.6, "weight": 0.25, "contribution": 0.15 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 1.0, "weight": 0.2, "contribution": 0.2 }
+            ]
+          },
+          {
+            "plan_index": 1,
+            "score": 0.5945,
+            "contributions": [
+              { "feature": "affects_public_service", "value": 0.2, "weight": 0.4, "contribution": 0.08 },
+              { "feature": "affects_route", "value": 1.0, "weight": 0.25, "contribution": 0.25 },
+              { "feature": "confidence", "value": 0.83, "weight": 0.15, "contribution": 0.1245 },
+              { "feature": "severity_score", "value": 0.7, "weight": 0.2, "contribution": 0.14 }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "narrative": {
+    "mode": "replay",
+    "items": [
+      {
+        "plan_index": 0,
+        "texts": {
+          "it": "Attivare deviazione bus di superficie su asse alternativo evitando Z_BAGNOLI; priorita' 1 per sicurezza"
+        }
+      },
+      {
+        "plan_index": 1,
+        "texts": {
+          "it": "Alternativa: linea R2 / Linea 1 verso poli al coperto (Museo MANN), tempo stimato 20 min",
+          "en": "Alternative: take Metro Line 1 / Bus R2 toward indoor landmarks (MANN Museum), estimated time 20 minutes."
+        }
+      },
+      {
+        "plan_index": 2,
+        "texts": {
+          "it": "Raggiungi il servizio pubblico in 15 min via percorso alternativo Cumana / Bus 151"
+        }
+      }
+    ]
+  }
+}

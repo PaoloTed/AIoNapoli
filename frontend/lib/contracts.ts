@@ -1,14 +1,18 @@
 import { z } from "zod";
 
-export const EXPECTED_CONTRACT_VERSION = "1.0.0";
+// Re-export all strictly typed frozen contracts from lib/types/contracts
+export * from "./types/contracts";
 
-export type AgentName = "mobility" | "crowding" | "context";
-export type Severity = "low" | "medium" | "high" | "critical";
-export type FindingType =
-  "route_disruption" | "route_alternative" | "density_alert" | "impact_assessment";
-export type PlanTarget = "operator" | "tourist" | "citizen";
-export type RuleId =
-  "R1_line2_crowding" | "R2_conflict_route_vs_density" | "R3_weather_capacity" | "R4_event_surge";
+// Re-export all strictly typed trace & negotiation models from lib/types/trace
+export * from "./types/trace";
+
+import type {
+  AgentName,
+  Finding,
+  FindingType,
+  PlanTarget,
+  ProblemDetail,
+} from "./types/contracts";
 
 export const AGENT_ORDER: readonly AgentName[] = ["mobility", "crowding", "context"] as const;
 export const PLAN_TARGETS: readonly PlanTarget[] = ["operator", "tourist", "citizen"] as const;
@@ -34,143 +38,7 @@ export const DECISION_KEYS = [
   "timestamp",
 ] as const;
 
-export type Finding = {
-  agent: AgentName;
-  type: FindingType;
-  content: Record<string, unknown>;
-  confidence: number;
-  severity: Severity;
-  source_id: string;
-  data_reference: string;
-  is_simulated: boolean;
-  timestamp: string;
-};
-
-export type Trigger = {
-  rule_id: RuleId;
-  agents_involved: AgentName[];
-};
-
-export type Conflict = {
-  detected: boolean;
-  description: string;
-};
-
-export type PlanItem = {
-  priority: number;
-  action: string;
-  target: PlanTarget;
-  rationale: string;
-};
-
-export type ReasoningStep = {
-  step: number;
-  agent: string;
-  finding_ref: string;
-  rule_applied: string;
-  outcome: string;
-};
-
-export type Decision = {
-  trigger: Trigger;
-  conflict: Conflict;
-  plan: PlanItem[];
-  reasoning_log: ReasoningStep[];
-  confidence: number;
-  timestamp: string;
-};
-
-export type Refusal = {
-  agent: AgentName;
-  reason_code: string;
-  missing_input: string[];
-  detail: string;
-};
-
-export type Contribution = {
-  feature: string;
-  value: number;
-  weight: number;
-  contribution: number;
-};
-
-export type ScoredItem = {
-  plan_index: number;
-  score: number;
-  contributions: Contribution[];
-};
-
-export type TargetRelevance = {
-  order: number[];
-  items: ScoredItem[];
-};
-
-export type RelevanceScore = {
-  rounding: number;
-  targets: Record<PlanTarget, TargetRelevance>;
-};
-
-export type NarrativeItem = {
-  plan_index: number;
-  texts: {
-    it: string;
-    en?: string | undefined;
-  };
-};
-
-export type Narrative = {
-  mode: "replay" | "live" | "off";
-  items: NarrativeItem[];
-};
-
-export type VehiclePosition = {
-  vehicle_id: string;
-  route_id?: string | null | undefined;
-  trip_id?: string | null | undefined;
-  latitude: number;
-  longitude: number;
-  bearing?: number | null | undefined;
-  speed_mps?: number | null | undefined;
-  zone_id?: string | null | undefined;
-  observed_at: string;
-  source_id: string;
-  is_simulated: boolean;
-};
-
-export type FindingResponse = {
-  contract_version: string;
-  finding: Finding;
-  finding_ref: string;
-};
-
-export type DecisionResponse = {
-  contract_version: string;
-  decision_id: string;
-  decision: Decision;
-  relevance: RelevanceScore;
-  narrative: Narrative;
-};
-
-export type ScenarioResponse = {
-  contract_version: string;
-  scenario_id: string;
-  title: string;
-  findings: Finding[];
-  vehicle_positions: VehiclePosition[];
-};
-
-export type Problem = {
-  type: string;
-  title: string;
-  status: number;
-  code: string;
-  field?: string | undefined;
-  detail: string;
-  instance: string;
-  refusal?: Refusal | undefined;
-};
-
-// SSE payloads (API.md section 5.2)
+// StreamEvent type for backward compatibility with useDecisionStream
 export type StreamStartPayload = {
   scenario_id: string;
   contract_version: string;
@@ -216,7 +84,7 @@ export type StreamEvent =
   | { event: "priority_applied"; data: PriorityAppliedPayload }
   | { event: "plan_item_created"; data: PlanItemCreatedPayload }
   | { event: "decision"; data: StreamDecisionPayload }
-  | { event: "error"; data: Problem };
+  | { event: "error"; data: ProblemDetail };
 
 // Zod schemas
 export const agentNameSchema = z.enum(["mobility", "crowding", "context"]);
@@ -406,7 +274,6 @@ export const problemSchema = z.object({
 });
 
 // Tolerant schemas used ONLY when contract_version differs from EXPECTED_CONTRACT_VERSION
-// (API-CLIENT.md §6: banner permanente, campi sconosciuti ignorati senza crash)
 export const compatScenarioResponseSchema = z.object({
   contract_version: z.string().min(1),
   scenario_id: z.string().min(1),
@@ -461,8 +328,7 @@ export const streamDecisionSchema = z.object({
   contract_version: z.string(),
 });
 
-// Content accessors (API-CLIENT.md section 1.1 & FE-REQ-03)
-// Never return defaults when a field is missing.
+// Content accessors (FE-REQ-03)
 const num = (c: Record<string, unknown>, k: string): number | undefined =>
   typeof c[k] === "number" && Number.isFinite(c[k]) ? (c[k] as number) : undefined;
 

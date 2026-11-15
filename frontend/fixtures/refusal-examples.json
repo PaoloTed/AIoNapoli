@@ -1,0 +1,223 @@
+{
+  "refusal_examples": [
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Agente senza dati sufficienti",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "nessuna stima di occupazione disponibile per Z_BAGNOLI",
+      "instance": "/api/v1/finding/crowding",
+      "refusal": {
+        "agent": "crowding",
+        "reason_code": "missing_occupancy",
+        "missing_input": [
+          "occupancy_estimates"
+        ],
+        "detail": "nessuna stima di occupazione disponibile per Z_BAGNOLI"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Agente senza dati sufficienti",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "orari e fermate GTFS della rete ANM non disponibili per la data indicata",
+      "instance": "/api/v1/finding/mobility",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "missing_gtfs",
+        "missing_input": [
+          "gtfs_static_feed"
+        ],
+        "detail": "orari e fermate GTFS della rete ANM non disponibili per la data indicata"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Agente senza dati sufficienti",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "livello di allerta meteo mancante nel bollettino regionale",
+      "instance": "/api/v1/finding/context",
+      "refusal": {
+        "agent": "context",
+        "reason_code": "missing_alert_level",
+        "missing_input": [
+          "alert_level"
+        ],
+        "detail": "livello di allerta meteo mancante nel bollettino regionale"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Agente senza dati sufficienti",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "impossibile validare il percorso: orizzonte temporale oltre le 24 ore",
+      "instance": "/api/v1/finding/mobility",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "out_of_horizon",
+        "missing_input": [
+          "schedule_horizon"
+        ],
+        "detail": "impossibile validare il percorso: orizzonte temporale oltre le 24 ore"
+      }
+    },
+    {
+      "code": "unresolved_location",
+      "status": 200,
+      "title": "Richiesta chiarimento posizione",
+      "type": "https://napoli-agentic-city/errors/unresolved_location",
+      "detail": "Luogo non risolto entro il perimetro di Napoli",
+      "instance": "/api/v1/route-request",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "unresolved_location",
+        "missing_input": [
+          "destination"
+        ],
+        "detail": "Il luogo 'Milano' ricade fuori dal perimetro urbano di Napoli (lat: 40.75-40.95, lon: 14.10-14.40)"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Punto non mappato",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "coordinate non associate ad alcun nodo stradale o fermata",
+      "instance": "/api/v1/finding/mobility",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "unmapped_point",
+        "missing_input": [
+          "transit_network_node"
+        ],
+        "detail": "coordinate non associate ad alcun nodo stradale o fermata"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Dati realtime assenti",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "feed GTFS-RT posizioni veicoli non aggiornato da oltre 15 minuti",
+      "instance": "/api/v1/finding/mobility",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "missing_realtime",
+        "missing_input": [
+          "vehicle_positions_rt"
+        ],
+        "detail": "feed GTFS-RT posizioni veicoli non aggiornato da oltre 15 minuti"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Geofence mancante",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "poligono perimetrale della zona non definito",
+      "instance": "/api/v1/finding/crowding",
+      "refusal": {
+        "agent": "crowding",
+        "reason_code": "missing_geofence",
+        "missing_input": [
+          "zone_polygon"
+        ],
+        "detail": "poligono perimetrale della zona non definito"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Densita non valida",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "valore densita stimato non normalizzato",
+      "instance": "/api/v1/finding/crowding",
+      "refusal": {
+        "agent": "crowding",
+        "reason_code": "invalid_density",
+        "missing_input": [
+          "calibrated_density"
+        ],
+        "detail": "valore densita stimato non normalizzato"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Finestra temporale mancante",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "manca intervallo orario per previsione meteo",
+      "instance": "/api/v1/finding/context",
+      "refusal": {
+        "agent": "context",
+        "reason_code": "missing_time_window",
+        "missing_input": [
+          "time_window"
+        ],
+        "detail": "manca intervallo orario per previsione meteo"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Fonte allerta non verificata",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "allerta meteo non riconducibile a bollettino ufficiale Protezione Civile",
+      "instance": "/api/v1/finding/context",
+      "refusal": {
+        "agent": "context",
+        "reason_code": "unsourced_alert",
+        "missing_input": [
+          "official_bulletin_id"
+        ],
+        "detail": "allerta meteo non riconducibile a bollettino ufficiale Protezione Civile"
+      }
+    },
+    {
+      "code": "agent_refusal",
+      "status": 422,
+      "title": "Impossibile validare",
+      "type": "https://napoli-agentic-city/errors/agent_refusal",
+      "detail": "vincoli contraddittori rilevati tra chiusure e alternative proposte",
+      "instance": "/api/v1/finding/mobility",
+      "refusal": {
+        "agent": "mobility",
+        "reason_code": "cannot_validate",
+        "missing_input": [
+          "consistent_constraints"
+        ],
+        "detail": "vincoli contraddittori rilevati tra chiusure e alternative proposte"
+      }
+    },
+    {
+      "code": "agent_mismatch",
+      "status": 422,
+      "title": "Agente non corrispondente",
+      "type": "https://napoli-agentic-city/errors/agent_mismatch",
+      "field": "agent",
+      "detail": "agente 'crowding' non ammesso sull'endpoint 'mobility'",
+      "instance": "/api/v1/finding/mobility"
+    },
+    {
+      "code": "invalid_finding",
+      "status": 422,
+      "title": "Finding non valido",
+      "type": "https://napoli-agentic-city/errors/invalid_finding",
+      "field": "content.density",
+      "detail": "Value error, content.density: density deve essere compresa tra 0 e 1",
+      "instance": "/api/v1/finding/crowding"
+    },
+    {
+      "code": "scenario_not_found",
+      "status": 404,
+      "title": "Scenario non trovato",
+      "type": "https://napoli-agentic-city/errors/scenario_not_found",
+      "field": "scenario_id",
+      "detail": "scenario 'inexistent_zone' sconosciuto",
+      "instance": "/api/v1/scenario/inexistent_zone"
+    }
+  ]
+}
